@@ -23,7 +23,6 @@ namespace PottingLabelPrinter.Forms
         private bool _prevDone;
         private DateTime? _riseAt;
         private long? _lastDurationMs;
-        private ModbusPollingService? _polling;
 
         private readonly List<string> _log = new List<string>(256);
 
@@ -221,13 +220,6 @@ namespace PottingLabelPrinter.Forms
                 chars[7 - i] = bit == 1 ? '1' : '0';
             }
             return new string(chars);
-        }
-
-        private void uiTimer_Tick(object sender, EventArgs e)
-        {
-            lblCommStatus.Text = _polling.LastCommStatus;
-            lblCommError.Text = _polling.LastCommError;
-            lblLastCommAt.Text = _polling.LastCommAt.ToString("HH:mm:ss.fff");
         }
     }
 }

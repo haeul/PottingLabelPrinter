@@ -38,9 +38,6 @@
             btnCopy = new Button();
             btnClear = new Button();
             btnClose = new Button();
-            lblCommStatus = new Label();
-            lblCommError = new Label();
-            lblLastCommAt = new Label();
             SuspendLayout();
             // 
             // lblNow
@@ -147,38 +144,11 @@
             btnClose.Text = "Close";
             btnClose.UseVisualStyleBackColor = true;
             // 
-            // lblCommStatus
-            // 
-            lblCommStatus.Location = new Point(12, 486);
-            lblCommStatus.Name = "lblCommStatus";
-            lblCommStatus.Size = new Size(67, 25);
-            lblCommStatus.TabIndex = 11;
-            lblCommStatus.Text = "Now: -";
-            // 
-            // lblCommError
-            // 
-            lblCommError.Location = new Point(160, 486);
-            lblCommError.Name = "lblCommError";
-            lblCommError.Size = new Size(67, 25);
-            lblCommError.TabIndex = 12;
-            lblCommError.Text = "Now: -";
-            // 
-            // lblLastCommAt
-            // 
-            lblLastCommAt.Location = new Point(323, 486);
-            lblLastCommAt.Name = "lblLastCommAt";
-            lblLastCommAt.Size = new Size(67, 25);
-            lblLastCommAt.TabIndex = 13;
-            lblLastCommAt.Text = "Now: -";
-            // 
             // FormDoneProbe
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(760, 520);
-            Controls.Add(lblLastCommAt);
-            Controls.Add(lblCommError);
-            Controls.Add(lblCommStatus);
             Controls.Add(lblNow);
             Controls.Add(lblInterval);
             Controls.Add(lblDone);
@@ -198,8 +168,5 @@
             ResumeLayout(false);
             PerformLayout();
         }
-        private Label lblCommStatus;
-        private Label lblCommError;
-        private Label lblLastCommAt;
     }
 }

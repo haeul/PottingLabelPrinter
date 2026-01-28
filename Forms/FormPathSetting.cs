@@ -16,12 +16,19 @@ namespace PottingLabelPrinter.Forms
             btnPathSave.Click += BtnPathSave_Click;
         }
 
-        private void FormPathSetting_Load(object? sender, EventArgs e)
-        {
-            txtPath.Text = (Properties.Settings.Default.SavePath ?? "").Trim();
-        }
+    private void FormPathSetting_Load(object? sender, EventArgs e)
+    {
+        var saved = (Properties.Settings.Default.SavePath ?? "").Trim();
 
-        private void BtnPathSave_Click(object? sender, EventArgs e)
+        // exe가 있는 폴더 기준
+        var exeDir = Application.StartupPath;
+        var defaultDir = Path.Combine(exeDir, "Data");
+
+        // 표시만: 저장값 있으면 그거, 없으면 기본값 표시
+        txtPath.Text = string.IsNullOrWhiteSpace(saved) ? defaultDir : saved;
+    }
+
+    private void BtnPathSave_Click(object? sender, EventArgs e)
         {
             var basePath = (txtPath.Text ?? "").Trim();
 

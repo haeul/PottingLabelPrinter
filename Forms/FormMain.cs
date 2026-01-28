@@ -27,11 +27,7 @@ namespace PottingLabelPrinter
             Slaves = new byte[] { 1 },
             Function = PottingLabelPrinter.Modbus.FunctionCode.ReadDiscreteInputs,
             Address = 0,
-
-            // NOTE: ModbusPollingService.cs는 IN2(bit1)를 완료 트리거로 사용 중이므로
-            //       BitIndex는 현재 PollingService에서 사용하지 않음(스펙 유지용)
             BitIndex = 0,
-
             Invert = false,
             IntervalMs = 200
         };
@@ -58,8 +54,8 @@ namespace PottingLabelPrinter
         // ====== (추가) 종료까지 유지되는 “연결 감시/자동 재연결” 타이머 ======
         private readonly System.Windows.Forms.Timer _reconnectTimer = new System.Windows.Forms.Timer();
         private int _healthFailStreak = 0;
-        private const int ReconnectTickMs = 1000;            // 1초마다 상태 점검
-        private const int FailThresholdToReconnect = 3;      // 연속 실패 임계치
+        private const int ReconnectTickMs = 1000;
+        private const int FailThresholdToReconnect = 3;
 
         /// <summary>
         /// IN2 상태일 때만 txtTrayBarcode backgroundcolor = white
@@ -89,6 +85,7 @@ namespace PottingLabelPrinter
 
             // 테스트용
             btnDoneProbe.Click += btnDoneProbe_Click;
+            btnDoneProbe.Visible = false;
         }
 
         private void FormMain_Load(object? sender, EventArgs e)
@@ -103,7 +100,7 @@ namespace PottingLabelPrinter
             // 연결 여부와 관계 없이 Start는 켜둬도 됨 (Tick에서 IsOpen 체크로 안전하게 skip)
             _polling.Start();
 
-            // 3) 오늘 로그 복원
+            // 3) 오늘 로그 복원 (복원도 최신이 위로 보이도록 처리)
             RestoreTodayStateIfExists();
 
             // 4) UI 상태 타이머 (IN2에 따라 txtTrayBarcode 배경 표시) - 종료까지 유지
@@ -122,21 +119,17 @@ namespace PottingLabelPrinter
         // =========================
         private void ReconnectTimer_Tick(object? sender, EventArgs e)
         {
-            // 사용자가 Setting에서 바꿀 수 있으니 매 Tick 읽어도 됨
             var port = (Properties.Settings.Default.ComBoardPort ?? "").Trim();
             if (string.IsNullOrWhiteSpace(port))
                 return;
 
-            // 1) 포트가 닫혀 있으면 재연결 시도
             if (!_modbusSession.IsOpen)
             {
                 TryReconnect(port, "IsOpen=false");
                 return;
             }
 
-            // 2) 헬스체크: 아주 가볍게 DiscreteInputs 2bit 읽기
-            //    (폴링이 잘 돌아가면 통신이 정상일 확률이 높지만,
-            //     끊김/장치 죽음/USB 불안정 등을 조기에 감지하는 용도)
+            // 헬스체크: DiscreteInputs 2bit 읽기
             byte slave = (_doneSpec.Slaves != null && _doneSpec.Slaves.Length > 0) ? _doneSpec.Slaves[0] : (byte)1;
             ushort addr = _doneSpec.Address;
             ushort count = 2;
@@ -158,29 +151,19 @@ namespace PottingLabelPrinter
         {
             _healthFailStreak = 0;
 
-            try
-            {
-                // 폴링은 종료까지 유지 정책이므로 Stop하지 않음.
-                // 세션만 재연결하면 PollingService는 다음 Tick부터 다시 정상 동작.
-                _modbusSession.Disconnect();
-            }
-            catch
-            {
-                // ignore
-            }
+            try { _modbusSession.Disconnect(); } catch { }
 
             try
             {
                 _modbusSession.Connect(portName, BoardBaudRate);
 
-                // 엣지 래치 초기화(재연결 직후 순간값으로 오탐 방지)
+                // 재연결 직후 오탐 방지
                 if (_polling != null)
                     _polling.ResetLatch();
             }
             catch
             {
-                // 재연결 실패도 앱은 계속 동작하게 둔다.
-                // 다음 Tick에서 재시도 가능.
+                // 재연결 실패도 앱은 계속 동작하게 둔다. 다음 Tick에서 재시도
             }
         }
 
@@ -192,16 +175,10 @@ namespace PottingLabelPrinter
             if (_polling == null)
                 return;
 
-            // IN2 = 완료 상태 → 흰색
             if (_polling.LastIn2)
-            {
                 txtTrayBarcode.BackColor = Color.White;
-            }
             else
-            {
-                // IN1 포함 기타 상태 → 기본 색
                 txtTrayBarcode.BackColor = SystemColors.Control;
-            }
         }
 
         // =========================
@@ -226,11 +203,10 @@ namespace PottingLabelPrinter
         }
 
         // =========================
-        // 종료: 프로그램 종료 시에만 정리 (요구사항)
+        // 종료: 프로그램 종료 시에만 정리
         // =========================
         private void FormMain_FormClosed(object? sender, FormClosedEventArgs e)
         {
-            // UI 타이머 정리
             try
             {
                 _uiStateTimer.Stop();
@@ -238,7 +214,6 @@ namespace PottingLabelPrinter
             }
             catch { }
 
-            // 재연결 타이머 정리
             try
             {
                 _reconnectTimer.Stop();
@@ -246,7 +221,6 @@ namespace PottingLabelPrinter
             }
             catch { }
 
-            // Polling 정리
             if (_polling != null)
             {
                 _polling.PottingDoneDetected -= Polling_PottingDoneDetected;
@@ -254,7 +228,6 @@ namespace PottingLabelPrinter
                 _polling = null;
             }
 
-            // 포트는 “종료 시점에만” 닫는다
             _modbusSession.Dispose();
         }
 
@@ -274,7 +247,7 @@ namespace PottingLabelPrinter
             }
             catch
             {
-                // 연결 실패는 앱을 죽이지 않고, 사용자가 포트 설정을 다시 하도록 둔다.
+                // 연결 실패는 앱을 죽이지 않고 둔다.
             }
         }
 
@@ -287,7 +260,7 @@ namespace PottingLabelPrinter
         }
 
         // =========================
-        // Setting 버튼: 포트 변경 시에는 “예외적으로” 재연결
+        // Setting 버튼: 포트 변경 시 예외적으로 재연결
         // =========================
         private void BtnComSetting_Click(object? sender, EventArgs e)
         {
@@ -299,9 +272,9 @@ namespace PottingLabelPrinter
         }
 
         /// <summary>
-        /// 요구사항: 기본은 종료까지 Open 유지.
+        /// 기본은 종료까지 Open 유지.
         /// 단, 사용자가 Setting에서 포트를 바꾼 경우는 예외적으로 재연결.
-        /// Polling은 종료까지 계속 유지(Stop하지 않고 세션만 재연결).
+        /// Polling은 종료까지 계속 유지(세션만 재연결).
         /// </summary>
         private void TryReconnectBoardKeepPolling()
         {
@@ -319,7 +292,7 @@ namespace PottingLabelPrinter
             }
             catch
             {
-                // 재연결 실패도 앱은 계속 동작하게 둔다.
+                // 실패해도 앱은 계속 동작
             }
         }
 
@@ -332,8 +305,8 @@ namespace PottingLabelPrinter
 
         private void EnsureDefaultSavePath()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var defaultDir = Path.Combine(baseDir, "Data");
+            var exeDir = Application.StartupPath;
+            var defaultDir = Path.Combine(exeDir, "Data");
 
             var saved = (Properties.Settings.Default.SavePath ?? "").Trim();
             if (!string.IsNullOrWhiteSpace(saved))
@@ -345,7 +318,6 @@ namespace PottingLabelPrinter
             if (!Directory.Exists(defaultDir))
                 Directory.CreateDirectory(defaultDir);
         }
-
         private void InitTraySequence()
         {
             _traySeqDate = DateTime.Today;
@@ -420,6 +392,10 @@ namespace PottingLabelPrinter
 
         private void BtnPrint_Click(object? sender, EventArgs e)
         {
+            // 요구사항: 체크박스 선택 후 Print는 “라벨만 출력”
+            //   - Grid 반영 X
+            //   - CSV 저장 X
+            //   - Count 반영 X
             PrintCheckedRows_LabelOnly_AndClearSelection();
         }
 
@@ -465,7 +441,8 @@ namespace PottingLabelPrinter
 
             var result = TryPrintPayload(payload);
 
-            dataGridView1.Rows.Add(false, nowText, payload, result);
+            // 요구사항: 최신 로그를 “맨 위”에 제한 없이 계속 쌓기
+            dataGridView1.Rows.Insert(0, false, nowText, payload, result);
 
             if (TryGetDailySaveDirectory(now, out var dailyDir))
                 SavePrintLogCsv(dailyDir, nowText, payload, result);
@@ -640,7 +617,6 @@ namespace PottingLabelPrinter
 
             try
             {
-                // 헤더는 파일 없을 때만
                 if (!File.Exists(filePath))
                 {
                     File.AppendAllText(
@@ -694,7 +670,8 @@ namespace PottingLabelPrinter
 
                 int lastTraySeq = 0;
 
-                foreach (var line in lines.Skip(1)) // 헤더 제외
+                // 최신이 위로 오게: 파일(오래된→최신) 저장이므로 역순으로 복원
+                foreach (var line in lines.Skip(1).Reverse())
                 {
                     if (string.IsNullOrWhiteSpace(line))
                         continue;
@@ -707,6 +684,7 @@ namespace PottingLabelPrinter
                     var tray = cols[1];
                     var result = cols[2];
 
+                    // 최신이 먼저 들어오고 아래로 쌓임
                     dataGridView1.Rows.Add(false, dateTime, tray, result);
 
                     _totalCount++;
@@ -715,8 +693,8 @@ namespace PottingLabelPrinter
                     {
                         _okCount++;
 
-                        // TRAY#### 파싱
                         if (tray.StartsWith("TRAY") &&
+                            tray.Length >= 8 &&
                             int.TryParse(tray.Substring(4, 4), out var seq))
                         {
                             lastTraySeq = Math.Max(lastTraySeq, seq);
