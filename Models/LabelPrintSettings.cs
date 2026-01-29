@@ -16,6 +16,15 @@ namespace PottingLabelPrinter.Models
         Rotate270
     }
 
+    public enum LabelElementKey
+    {
+        DataMatrix = 1,
+        TrayNo = 2,
+        Date = 3,
+        Time = 4
+    }
+
+
     public class PrintRuntimeSettings
     {
         public int Darkness { get; set; } = 10;
@@ -35,6 +44,7 @@ namespace PottingLabelPrinter.Models
 
     public class LabelElement
     {
+        public LabelElementKey Key { get; set; }
         public int No { get; set; }
         public LabelElementType Type { get; set; } = LabelElementType.Text;
         public decimal Xmm { get; set; }
@@ -62,26 +72,50 @@ namespace PottingLabelPrinter.Models
                     new LabelElement
                     {
                         No = 1,
-                        Type = LabelElementType.Text,
-                        Xmm = 8m,
-                        Ymm = 4m,
+                        Type = LabelElementType.DataMatrix,
+                        Xmm = 10.01m,
+                        Ymm = 3.75m,
                         Rotation = 0m,
-                        FontSizeMm = 2.6m,
+                        FontSizeMm = 0.375m, // BXN,3 에 맞춤 (모듈 mm)
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = "TEXT"
+                        Value = "" // DM payload는 런타임에서 채움
                     },
                     new LabelElement
                     {
                         No = 2,
-                        Type = LabelElementType.DataMatrix,
-                        Xmm = 30m,
-                        Ymm = 2m,
+                        Type = LabelElementType.Text,
+                        Xmm = 18.77m,
+                        Ymm = 3.75m,
                         Rotation = 0m,
-                        FontSizeMm = 0.6m,
+                        FontSizeMm = 2.50m, // A0N,20,20 ≒ 2.5mm
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = "DM"
+                        Value = "Tray0001"
+                    },
+                    new LabelElement
+                    {
+                        No = 3,
+                        Type = LabelElementType.Text,
+                        Xmm = 18.77m,
+                        Ymm = 6.26m,
+                        Rotation = 0m,
+                        FontSizeMm = 2.50m,
+                        ScaleX = 1m,
+                        ScaleY = 1m,
+                        Value = "2026-01-29"
+                    },
+                    new LabelElement
+                    {
+                        No = 4,
+                        Type = LabelElementType.Text,
+                        Xmm = 18.77m,
+                        Ymm = 8.76m,
+                        Rotation = 0m,
+                        FontSizeMm = 2.50m,
+                        ScaleX = 1m,
+                        ScaleY = 1m,
+                        Value = "20:55:12"
                     }
                 }
             };
