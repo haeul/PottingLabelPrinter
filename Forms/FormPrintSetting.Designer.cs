@@ -42,8 +42,8 @@
             panel1 = new Panel();
             tableLayoutPanel1 = new TableLayoutPanel();
             nudYoffset = new NumericUpDown();
-            lblYoffset = new Label();
             nudXoffset = new NumericUpDown();
+            lblYoffset = new Label();
             lblXoffset = new Label();
             lblOffsetSetting = new Label();
             lblPrintSetting = new Label();
@@ -116,11 +116,12 @@
             panel2.Controls.Add(lblPreview);
             panel2.Location = new Point(563, 86);
             panel2.Name = "panel2";
-            panel2.Size = new Size(399, 236);
+            panel2.Size = new Size(399, 232);
             panel2.TabIndex = 8;
             // 
             // tableLayoutPanel2
             // 
+            tableLayoutPanel2.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
             tableLayoutPanel2.ColumnCount = 3;
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
@@ -128,20 +129,20 @@
             tableLayoutPanel2.Controls.Add(btnPrint, 2, 0);
             tableLayoutPanel2.Controls.Add(btnReset, 1, 0);
             tableLayoutPanel2.Controls.Add(btnSave, 0, 0);
-            tableLayoutPanel2.Location = new Point(0, 200);
+            tableLayoutPanel2.Location = new Point(0, 184);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 1;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanel2.Size = new Size(399, 36);
+            tableLayoutPanel2.Size = new Size(399, 43);
             tableLayoutPanel2.TabIndex = 2;
             // 
             // btnPrint
             // 
             btnPrint.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnPrint.Location = new Point(267, 3);
+            btnPrint.Location = new Point(268, 4);
             btnPrint.Name = "btnPrint";
-            btnPrint.Size = new Size(126, 30);
+            btnPrint.Size = new Size(126, 35);
             btnPrint.TabIndex = 2;
             btnPrint.Text = "Print";
             btnPrint.UseVisualStyleBackColor = true;
@@ -149,9 +150,9 @@
             // btnReset
             // 
             btnReset.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnReset.Location = new Point(135, 3);
+            btnReset.Location = new Point(136, 4);
             btnReset.Name = "btnReset";
-            btnReset.Size = new Size(126, 30);
+            btnReset.Size = new Size(125, 35);
             btnReset.TabIndex = 1;
             btnReset.Text = "Reset";
             btnReset.UseVisualStyleBackColor = true;
@@ -159,19 +160,19 @@
             // btnSave
             // 
             btnSave.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnSave.Location = new Point(3, 3);
+            btnSave.Location = new Point(4, 4);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(126, 30);
+            btnSave.Size = new Size(125, 35);
             btnSave.TabIndex = 0;
             btnSave.Text = "Save";
             btnSave.UseVisualStyleBackColor = true;
             // 
             // pnlPreview
             // 
-            pnlPreview.BackColor = Color.White;
+            pnlPreview.BackColor = SystemColors.Control;
             pnlPreview.Location = new Point(3, 37);
             pnlPreview.Name = "pnlPreview";
-            pnlPreview.Size = new Size(393, 159);
+            pnlPreview.Size = new Size(393, 143);
             pnlPreview.TabIndex = 1;
             // 
             // lblPreview
@@ -193,19 +194,21 @@
             panel1.Controls.Add(tlpProduct);
             panel1.Location = new Point(10, 86);
             panel1.Name = "panel1";
-            panel1.Size = new Size(543, 236);
+            panel1.Size = new Size(543, 237);
             panel1.TabIndex = 7;
             // 
             // tableLayoutPanel1
             // 
+            tableLayoutPanel1.BackColor = SystemColors.Control;
+            tableLayoutPanel1.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
             tableLayoutPanel1.ColumnCount = 4;
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
             tableLayoutPanel1.Controls.Add(nudYoffset, 3, 0);
-            tableLayoutPanel1.Controls.Add(lblYoffset, 2, 0);
             tableLayoutPanel1.Controls.Add(nudXoffset, 1, 0);
+            tableLayoutPanel1.Controls.Add(lblYoffset, 2, 0);
             tableLayoutPanel1.Controls.Add(lblXoffset, 0, 0);
             tableLayoutPanel1.Location = new Point(4, 200);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -216,42 +219,44 @@
             // 
             // nudYoffset
             // 
+            nudYoffset.Dock = DockStyle.Fill;
             nudYoffset.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            nudYoffset.Location = new Point(377, 3);
+            nudYoffset.Location = new Point(378, 4);
             nudYoffset.Name = "nudYoffset";
-            nudYoffset.Size = new Size(155, 25);
+            nudYoffset.Size = new Size(154, 25);
             nudYoffset.TabIndex = 18;
+            // 
+            // nudXoffset
+            // 
+            nudXoffset.Dock = DockStyle.Fill;
+            nudXoffset.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            nudXoffset.Location = new Point(111, 4);
+            nudXoffset.Name = "nudXoffset";
+            nudXoffset.Size = new Size(153, 25);
+            nudXoffset.TabIndex = 16;
             // 
             // lblYoffset
             // 
+            lblYoffset.Anchor = AnchorStyles.None;
             lblYoffset.BackColor = SystemColors.Control;
-            lblYoffset.Dock = DockStyle.Fill;
             lblYoffset.Font = new Font("Segoe UI Semibold", 12.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblYoffset.Location = new Point(267, 0);
+            lblYoffset.Location = new Point(268, 1);
             lblYoffset.Margin = new Padding(0);
             lblYoffset.Name = "lblYoffset";
-            lblYoffset.Size = new Size(107, 32);
+            lblYoffset.Size = new Size(106, 29);
             lblYoffset.TabIndex = 17;
             lblYoffset.Text = "Y 오프셋";
             lblYoffset.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // nudXoffset
-            // 
-            nudXoffset.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            nudXoffset.Location = new Point(110, 3);
-            nudXoffset.Name = "nudXoffset";
-            nudXoffset.Size = new Size(154, 25);
-            nudXoffset.TabIndex = 16;
-            // 
             // lblXoffset
             // 
+            lblXoffset.Anchor = AnchorStyles.None;
             lblXoffset.BackColor = SystemColors.Control;
-            lblXoffset.Dock = DockStyle.Fill;
             lblXoffset.Font = new Font("Segoe UI Semibold", 12.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblXoffset.Location = new Point(0, 0);
+            lblXoffset.Location = new Point(1, 1);
             lblXoffset.Margin = new Padding(0);
             lblXoffset.Name = "lblXoffset";
-            lblXoffset.Size = new Size(107, 32);
+            lblXoffset.Size = new Size(106, 29);
             lblXoffset.TabIndex = 1;
             lblXoffset.Text = "X 오프셋";
             lblXoffset.TextAlign = ContentAlignment.MiddleCenter;
@@ -262,7 +267,7 @@
             lblOffsetSetting.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblOffsetSetting.Location = new Point(3, 161);
             lblOffsetSetting.Name = "lblOffsetSetting";
-            lblOffsetSetting.Size = new Size(540, 35);
+            lblOffsetSetting.Size = new Size(537, 35);
             lblOffsetSetting.TabIndex = 8;
             lblOffsetSetting.Text = "오프셋 설정";
             lblOffsetSetting.TextAlign = ContentAlignment.MiddleCenter;
@@ -273,7 +278,7 @@
             lblPrintSetting.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblPrintSetting.Location = new Point(0, 0);
             lblPrintSetting.Name = "lblPrintSetting";
-            lblPrintSetting.Size = new Size(543, 35);
+            lblPrintSetting.Size = new Size(540, 35);
             lblPrintSetting.TabIndex = 7;
             lblPrintSetting.Text = "인쇄 설정";
             lblPrintSetting.TextAlign = ContentAlignment.MiddleCenter;
@@ -529,10 +534,10 @@
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
             dataGridView2.DefaultCellStyle = dataGridViewCellStyle2;
             dataGridView2.EnableHeadersVisualStyles = false;
-            dataGridView2.Location = new Point(10, 334);
+            dataGridView2.Location = new Point(10, 344);
             dataGridView2.Name = "dataGridView2";
             dataGridView2.RowHeadersWidth = 62;
-            dataGridView2.Size = new Size(952, 597);
+            dataGridView2.Size = new Size(952, 587);
             dataGridView2.TabIndex = 0;
             // 
             // 순번
