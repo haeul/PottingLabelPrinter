@@ -35,8 +35,8 @@
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             pnlHeader = new Panel();
-            btnDoneProbe = new Button();
             tlpSetting = new TableLayoutPanel();
+            btnPrintSetting = new Button();
             btnPathSetting = new Button();
             btnComSetting = new Button();
             lblHeader = new Label();
@@ -89,7 +89,6 @@
             // pnlHeader
             // 
             pnlHeader.BackColor = SystemColors.Control;
-            pnlHeader.Controls.Add(btnDoneProbe);
             pnlHeader.Controls.Add(tlpSetting);
             pnlHeader.Controls.Add(lblHeader);
             pnlHeader.Controls.Add(ImgInfac);
@@ -99,43 +98,44 @@
             pnlHeader.TabIndex = 0;
             pnlHeader.Paint += Panel_LightBorder_Paint;
             // 
-            // btnDoneProbe
-            // 
-            btnDoneProbe.BackColor = SystemColors.Control;
-            btnDoneProbe.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnDoneProbe.ForeColor = SystemColors.ControlText;
-            btnDoneProbe.Location = new Point(530, 7);
-            btnDoneProbe.Name = "btnDoneProbe";
-            btnDoneProbe.Size = new Size(141, 51);
-            btnDoneProbe.TabIndex = 4;
-            btnDoneProbe.Text = "Test";
-            btnDoneProbe.UseVisualStyleBackColor = false;
-            // 
             // tlpSetting
             // 
             tlpSetting.BackColor = Color.White;
             tlpSetting.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
-            tlpSetting.ColumnCount = 2;
-            tlpSetting.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tlpSetting.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tlpSetting.ColumnCount = 3;
+            tlpSetting.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tlpSetting.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tlpSetting.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tlpSetting.Controls.Add(btnPrintSetting, 2, 0);
             tlpSetting.Controls.Add(btnPathSetting, 1, 0);
             tlpSetting.Controls.Add(btnComSetting, 0, 0);
-            tlpSetting.Location = new Point(677, 3);
+            tlpSetting.Location = new Point(550, 3);
             tlpSetting.Name = "tlpSetting";
             tlpSetting.RowCount = 1;
             tlpSetting.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tlpSetting.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tlpSetting.Size = new Size(272, 59);
+            tlpSetting.Size = new Size(399, 59);
             tlpSetting.TabIndex = 4;
+            // 
+            // btnPrintSetting
+            // 
+            btnPrintSetting.BackColor = SystemColors.Control;
+            btnPrintSetting.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnPrintSetting.ForeColor = SystemColors.ControlText;
+            btnPrintSetting.Location = new Point(268, 4);
+            btnPrintSetting.Name = "btnPrintSetting";
+            btnPrintSetting.Size = new Size(127, 51);
+            btnPrintSetting.TabIndex = 4;
+            btnPrintSetting.Text = "Print Setting";
+            btnPrintSetting.UseVisualStyleBackColor = false;
             // 
             // btnPathSetting
             // 
             btnPathSetting.BackColor = SystemColors.Control;
             btnPathSetting.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnPathSetting.ForeColor = SystemColors.ControlText;
-            btnPathSetting.Location = new Point(139, 4);
+            btnPathSetting.Location = new Point(136, 4);
             btnPathSetting.Name = "btnPathSetting";
-            btnPathSetting.Size = new Size(129, 51);
+            btnPathSetting.Size = new Size(125, 51);
             btnPathSetting.TabIndex = 2;
             btnPathSetting.Text = "Path Setting";
             btnPathSetting.UseVisualStyleBackColor = false;
@@ -147,7 +147,7 @@
             btnComSetting.ForeColor = SystemColors.ControlText;
             btnComSetting.Location = new Point(4, 4);
             btnComSetting.Name = "btnComSetting";
-            btnComSetting.Size = new Size(128, 51);
+            btnComSetting.Size = new Size(125, 51);
             btnComSetting.TabIndex = 3;
             btnComSetting.Text = "Port Setting";
             btnComSetting.UseVisualStyleBackColor = false;
@@ -693,6 +693,6 @@
         private DataGridViewTextBoxColumn colDateTime;
         private DataGridViewTextBoxColumn colTrayBarcode;
         private DataGridViewTextBoxColumn colResult;
-        private Button btnDoneProbe;
+        private Button btnPrintSetting;
     }
 }

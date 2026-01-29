@@ -73,6 +73,7 @@ namespace PottingLabelPrinter
 
             btnComSetting.Click += BtnComSetting_Click;
             btnPathSetting.Click += BtnPathSetting_Click;
+            btnPrintSetting.Click += BtnPrintSetting_Click;
 
             btnPrint.Click += BtnPrint_Click;
             btnReset.Click += BtnReset_Click;
@@ -84,8 +85,8 @@ namespace PottingLabelPrinter
             WireGridSelectHandlers();
 
             // 테스트용
-            btnDoneProbe.Click += btnDoneProbe_Click;
-            btnDoneProbe.Visible = false;
+            //btnDoneProbe.Click += btnDoneProbe_Click;
+            //btnDoneProbe.Visible = false;
         }
 
         private void FormMain_Load(object? sender, EventArgs e)
@@ -200,6 +201,15 @@ namespace PottingLabelPrinter
             );
 
             _doneProbeForm.Show(this);
+        }
+
+
+        private void BtnPrintSetting_Click(object sender, EventArgs e)
+        {
+            using (var form = new FormPrintSetting())
+            {
+                form.ShowDialog(this);
+            }
         }
 
         // =========================
