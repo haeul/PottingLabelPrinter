@@ -110,8 +110,11 @@ namespace PottingLabelPrinter.Forms
             CommitGridEdits();
 
             var model = BuildModelFromUi();
-            model = LabelValueResolver.ApplyPlaceholders(model, BuildSamplePayload(), model.Print.StartNo, DateTime.Now);
+            var samplePayload = BuildSamplePayload();
+            model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, DateTime.Now, resolveNo: false);
             var zpl = LabelZplBuilder.Build(model, DefaultDpi);
+            ZplDebugLogger.Dump("print-setting", samplePayload, zpl);
+
             bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
 
             MessageBox.Show(
@@ -148,7 +151,7 @@ namespace PottingLabelPrinter.Forms
 
             // GapMm은 현재 ZPL에 적용하지 않으므로 비활성화하여 혼선을 줄인다.
             nudLabelSpace.Enabled = false;
-            lblLabelSpace.Text = "라벨 간격(미적용)";
+            lblLabelSpace.Text = "라벨 간격";
 
             nudLabelWidth.ValueChanged += (_, __) => UpdateGridRangesFromLabel();
             nudLabelHeight.ValueChanged += (_, __) => UpdateGridRangesFromLabel();
@@ -211,7 +214,7 @@ namespace PottingLabelPrinter.Forms
 
             dataGridView2.Columns.Add(BuildNumericColumn(ColX, "X(mm)", 0, 500, 0.1m, 1));
             dataGridView2.Columns.Add(BuildNumericColumn(ColY, "Y(mm)", 0, 500, 0.1m, 1));
-            dataGridView2.Columns.Add(BuildNumericColumn(ColRotation, "회전", 0, 360, 1m, 0));
+            dataGridView2.Columns.Add(BuildRotationComboColumn());
             dataGridView2.Columns.Add(BuildNumericColumn(ColFont, "크기(mm)", 0.1m, 50, 0.1m, 1));
             dataGridView2.Columns.Add(BuildNumericColumn(ColScaleX, "X비율", 0.1m, 10, 0.1m, 2));
             dataGridView2.Columns.Add(BuildNumericColumn(ColScaleY, "Y비율", 0.1m, 10, 0.1m, 2));
@@ -239,11 +242,37 @@ namespace PottingLabelPrinter.Forms
             dataGridView2.CellEndEdit += (_, __) => RefreshPreview();
             dataGridView2.RowsAdded += (_, __) => UpdateRowNumbers();
             dataGridView2.RowsRemoved += (_, __) => UpdateRowNumbers();
-            dataGridView2.DataError += (_, __) => { };
+            dataGridView2.DataError += (s, e) =>
+            {
+                // 최소한 Debug로라도 원인 남겨두기
+                System.Diagnostics.Debug.WriteLine($"Grid DataError: {e.Exception?.Message}");
+                e.ThrowException = false;
+            };
 
             dataGridView2.ResumeLayout();
             UpdateGridRangesFromLabel();
         }
+
+        private DataGridViewComboBoxColumn BuildRotationComboColumn()
+        {
+            var col = new DataGridViewComboBoxColumn
+            {
+                Name = ColRotation,
+                HeaderText = "회전",
+                Width = 70,
+                FlatStyle = FlatStyle.Flat,
+                DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton,
+                ValueType = typeof(decimal),   // 핵심
+            };
+
+            col.Items.Add(0m);
+            col.Items.Add(90m);
+            col.Items.Add(180m);
+            col.Items.Add(270m);
+
+            return col;
+        }
+
 
         private void DataGridView2_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
         {
@@ -335,7 +364,7 @@ namespace PottingLabelPrinter.Forms
 
                 row.Cells[ColX].Value = element.Xmm;
                 row.Cells[ColY].Value = element.Ymm;
-                row.Cells[ColRotation].Value = element.Rotation;
+                row.Cells[ColRotation].Value = (decimal)SnapRotationToComboValue(element.Rotation);
                 row.Cells[ColFont].Value = element.FontSizeMm;
                 row.Cells[ColScaleX].Value = element.ScaleX;
                 row.Cells[ColScaleY].Value = element.ScaleY;
@@ -345,6 +374,20 @@ namespace PottingLabelPrinter.Forms
 
             UpdateRowNumbers();
         }
+
+        private decimal SnapRotationToComboValue(decimal rotation)
+        {
+            int v = (int)Math.Round(rotation);
+
+            v %= 360;
+            if (v < 0) v += 360;
+
+            if (v >= 315 || v < 45) return 0m;
+            if (v < 135) return 90m;
+            if (v < 225) return 180m;
+            return 270m;
+        }
+
 
         private void UpdateRowNumbers()
         {
@@ -365,6 +408,10 @@ namespace PottingLabelPrinter.Forms
 
                 if (row.Cells[ColShowPrint].Value == null)
                     row.Cells[ColShowPrint].Value = true;
+
+                if (row.Cells[ColRotation].Value == null)
+                    row.Cells[ColRotation].Value = 0;
+
             }
         }
 
@@ -463,14 +510,16 @@ namespace PottingLabelPrinter.Forms
             CommitGridEdits();
 
             var model = BuildModelFromUi();
-            model = LabelValueResolver.ApplyPlaceholders(model, BuildSamplePayload(), model.Print.StartNo, DateTime.Now);
+            var samplePayload = BuildSamplePayload();
+            model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, DateTime.Now, resolveNo: true);
             LabelPreviewRenderer.DrawPreview(e.Graphics, pnlPreview.ClientRectangle, model, DefaultDpi, PreviewPaddingPx);
         }
 
         private string BuildSamplePayload()
         {
             var now = DateTime.Now;
-            return $"TRAY0001 {now:yyyy-MM-dd HH:mm:ss}";
+            // 핵심: 0000 같은 고정 숫자 대신 {NO}를 남긴다
+            return $"TRAY{{NO}} {now:yyyy-MM-dd HH:mm:ss}";
         }
     }
 }

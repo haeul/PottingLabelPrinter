@@ -369,9 +369,9 @@ namespace PottingLabelPrinter
             }
         }
 
-        private string BuildTrayBarcodeText(DateTime now)
+        private string BuildTrayBarcodeText(DateTime now, int traySeq)
         {
-            return $"TRAY{_traySeq:0000} {now:yyyy-MM-dd HH:mm:ss}";
+            return $"TRAY{traySeq:0000} {now:yyyy-MM-dd HH:mm:ss}";
         }
 
         private void AdvanceTraySeqAfterOkPrint()
@@ -469,7 +469,8 @@ namespace PottingLabelPrinter
 
             var now = DateTime.Now;
             var nowText = now.ToString("yyyy-MM-dd HH:mm:ss");
-            var payload = BuildTrayBarcodeText(now);
+            int currentSeq = LabelSequenceState.GetCurrentNo();
+            var payload = BuildTrayBarcodeText(now, currentSeq);
 
             var result = TryPrintPayload(payload);
 
@@ -484,7 +485,8 @@ namespace PottingLabelPrinter
             if (string.Equals(result, "OK", StringComparison.OrdinalIgnoreCase))
             {
                 _okCount++;
-                AdvanceTraySeqAfterOkPrint();
+                LabelSequenceState.SetCurrentNo(currentSeq + 1);
+                _traySeq = currentSeq + 1;
                 txtTrayBarcode.Text = payload;
             }
             else
@@ -598,6 +600,7 @@ namespace PottingLabelPrinter
 
             _traySeqDate = DateTime.Today;
             _traySeq = 1;
+            LabelSequenceState.SetCurrentNo(1);
 
             txtTrayBarcode.Text = "-";
             ClearAllSelections();
@@ -865,8 +868,10 @@ namespace PottingLabelPrinter
         private string BuildZplForPayload(string payload)
         {
             var model = PrintSettingStorage.Load();
-            var resolved = LabelValueResolver.ApplyPlaceholders(model, payload, model.Print.StartNo, DateTime.Now);
-            return LabelZplBuilder.Build(resolved, DefaultDpi);
+            var resolved = LabelValueResolver.ApplyPlaceholders(model, payload, model.Print.StartNo, DateTime.Now, resolveNo: false);
+            var zpl = LabelZplBuilder.Build(resolved, DefaultDpi);
+            ZplDebugLogger.Dump("form-main", payload, zpl);
+            return zpl;
         }
     }
 }

@@ -81,6 +81,7 @@ namespace PottingLabelPrinter.Services
         {
             float x = convertX((double)element.Xmm);
             float y = convertY((double)element.Ymm);
+            float snappedRotation = LabelLayoutMath.SnapRotationToRightAngle(element.Rotation);
 
             var gstate = graphics.Save();
             try
@@ -91,7 +92,7 @@ namespace PottingLabelPrinter.Services
                     GetDataMatrixSizePx(element, mm2px, dpi, out float sidePx);
 
                     graphics.TranslateTransform(x + sidePx / 2f, y + sidePx / 2f);
-                    graphics.RotateTransform((float)element.Rotation);
+                    graphics.RotateTransform(snappedRotation);
                     graphics.TranslateTransform(-sidePx / 2f, -sidePx / 2f);
 
                     DrawDataMatrix(graphics, element, mm2px, dpi, sidePx);
@@ -102,7 +103,7 @@ namespace PottingLabelPrinter.Services
                     fontForMeasure.Dispose();
 
                     graphics.TranslateTransform(x + textSizePx.Width / 2f, y + textSizePx.Height / 2f);
-                    graphics.RotateTransform((float)element.Rotation);
+                    graphics.RotateTransform(snappedRotation);
                     graphics.TranslateTransform(-textSizePx.Width / 2f, -textSizePx.Height / 2f);
 
                     DrawText(graphics, element, mm2px, dpi);
@@ -131,7 +132,7 @@ namespace PottingLabelPrinter.Services
                 try
                 {
                     float sx = (float)Math.Max(0.01, (double)element.ScaleX);
-                    float sy = (float)Math.Max(0.01, (double)element.ScaleY);
+                    float sy = 1f;
                     if (Math.Abs(sx - 1f) > 1e-6 || Math.Abs(sy - 1f) > 1e-6)
                         graphics.ScaleTransform(sx, sy);
 
@@ -157,7 +158,7 @@ namespace PottingLabelPrinter.Services
 
             var baseSize = g.MeasureString(element.Value ?? "", measureFont);
             float sx = (float)Math.Max(0.01, (double)element.ScaleX);
-            float sy = (float)Math.Max(0.01, (double)element.ScaleY);
+            float sy = 1f;
             return new SizeF(baseSize.Width * sx, baseSize.Height * sy);
         }
 

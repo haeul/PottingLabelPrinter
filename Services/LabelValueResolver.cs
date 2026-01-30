@@ -6,7 +6,7 @@ namespace PottingLabelPrinter.Services
 {
     public static class LabelValueResolver
     {
-        public static PrintSettingModel ApplyPlaceholders(PrintSettingModel model, string payload, int currentNo, DateTime? now = null)
+        public static PrintSettingModel ApplyPlaceholders(PrintSettingModel model, string payload, int currentNo, DateTime? now = null, bool resolveNo = true)
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
 
@@ -40,8 +40,10 @@ namespace PottingLabelPrinter.Services
                 value = value.Replace("{PAYLOAD}", trimmed)
                              .Replace("{TRAY}", tray)
                              .Replace("{DATE}", date)
-                             .Replace("{TIME}", time)
-                             .Replace("{NO}", currentNo.ToString());
+                             .Replace("{TIME}", time);
+
+                if (resolveNo)
+                    value = value.Replace("{NO}", currentNo.ToString());
 
                 element.Value = value;
             }

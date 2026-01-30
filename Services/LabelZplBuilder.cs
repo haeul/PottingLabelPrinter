@@ -64,15 +64,16 @@ namespace PottingLabelPrinter.Services
             decimal yMm = element.Ymm + geometry.OffsetYmm;
 
             int x = MmToDots((double)xMm, dpi);
-            int y = MmToDots((double)(yMm + (decimal)NudgeYmm), dpi);
+            int y = MmToDots((double)yMm, dpi);
             char orientation = ToOrientation(element.Rotation);
 
-            string value = (element.Value ?? string.Empty).Replace("{NO}", currentNo.ToString());
+            // {NO}는 항상 4자리로
+            string no4 = currentNo.ToString("0000");
+            string value = (element.Value ?? string.Empty).Replace("{NO}", no4);
             value = Escape(value);
 
             if (element.Type == LabelElementType.DataMatrix)
             {
-                // SSOT: FontSizeMm = 목표 한 변(mm), ScaleX/ScaleY 무시
                 var dm = LabelLayoutMath.CalcDataMatrixDots(element, dpi);
                 int moduleDots = Math.Max(1, dm.ModuleDots);
 
@@ -97,17 +98,7 @@ namespace PottingLabelPrinter.Services
         }
 
         private static char ToOrientation(decimal rotation)
-        {
-            int rot = (int)Math.Round(rotation);
-            rot = ((rot % 360) + 360) % 360;
-            return rot switch
-            {
-                90 => 'R',
-                180 => 'I',
-                270 => 'B',
-                _ => 'N'
-            };
-        }
+            => LabelLayoutMath.RotationToZplOrientation(rotation);
 
         private static int MmToDots(double mm, int dpi)
             => LabelLayoutMath.MmToDotsInt(mm, dpi);

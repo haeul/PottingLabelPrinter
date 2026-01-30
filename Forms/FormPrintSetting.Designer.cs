@@ -71,7 +71,7 @@
             순번 = new DataGridViewTextBoxColumn();
             X좌표 = new DataGridViewTextBoxColumn();
             Y좌표 = new DataGridViewTextBoxColumn();
-            회전 = new DataGridViewTextBoxColumn();
+            회전 = new DataGridViewComboBoxColumn();
             크기 = new DataGridViewTextBoxColumn();
             X비율 = new DataGridViewTextBoxColumn();
             Y비율 = new DataGridViewTextBoxColumn();
@@ -116,7 +116,7 @@
             panel2.Controls.Add(lblPreview);
             panel2.Location = new Point(563, 86);
             panel2.Name = "panel2";
-            panel2.Size = new Size(399, 232);
+            panel2.Size = new Size(399, 240);
             panel2.TabIndex = 8;
             // 
             // tableLayoutPanel2
@@ -129,12 +129,12 @@
             tableLayoutPanel2.Controls.Add(btnPrint, 2, 0);
             tableLayoutPanel2.Controls.Add(btnReset, 1, 0);
             tableLayoutPanel2.Controls.Add(btnSave, 0, 0);
-            tableLayoutPanel2.Location = new Point(0, 184);
+            tableLayoutPanel2.Location = new Point(0, 186);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 1;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
-            tableLayoutPanel2.Size = new Size(399, 43);
+            tableLayoutPanel2.Size = new Size(399, 51);
             tableLayoutPanel2.TabIndex = 2;
             // 
             // btnPrint
@@ -142,7 +142,7 @@
             btnPrint.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             btnPrint.Location = new Point(268, 4);
             btnPrint.Name = "btnPrint";
-            btnPrint.Size = new Size(126, 35);
+            btnPrint.Size = new Size(126, 43);
             btnPrint.TabIndex = 2;
             btnPrint.Text = "Print";
             btnPrint.UseVisualStyleBackColor = true;
@@ -152,7 +152,7 @@
             btnReset.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             btnReset.Location = new Point(136, 4);
             btnReset.Name = "btnReset";
-            btnReset.Size = new Size(125, 35);
+            btnReset.Size = new Size(125, 43);
             btnReset.TabIndex = 1;
             btnReset.Text = "Reset";
             btnReset.UseVisualStyleBackColor = true;
@@ -162,7 +162,7 @@
             btnSave.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             btnSave.Location = new Point(4, 4);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(125, 35);
+            btnSave.Size = new Size(125, 43);
             btnSave.TabIndex = 0;
             btnSave.Text = "Save";
             btnSave.UseVisualStyleBackColor = true;
@@ -194,7 +194,7 @@
             panel1.Controls.Add(tlpProduct);
             panel1.Location = new Point(10, 86);
             panel1.Name = "panel1";
-            panel1.Size = new Size(543, 237);
+            panel1.Size = new Size(543, 240);
             panel1.TabIndex = 7;
             // 
             // tableLayoutPanel1
@@ -210,7 +210,7 @@
             tableLayoutPanel1.Controls.Add(nudXoffset, 1, 0);
             tableLayoutPanel1.Controls.Add(lblYoffset, 2, 0);
             tableLayoutPanel1.Controls.Add(lblXoffset, 0, 0);
-            tableLayoutPanel1.Location = new Point(4, 200);
+            tableLayoutPanel1.Location = new Point(4, 205);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -265,7 +265,7 @@
             // 
             lblOffsetSetting.BackColor = Color.LightGray;
             lblOffsetSetting.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            lblOffsetSetting.Location = new Point(3, 161);
+            lblOffsetSetting.Location = new Point(3, 164);
             lblOffsetSetting.Name = "lblOffsetSetting";
             lblOffsetSetting.Size = new Size(537, 35);
             lblOffsetSetting.TabIndex = 8;
@@ -308,7 +308,7 @@
             tlpProduct.Controls.Add(lblLabelHeight, 0, 2);
             tlpProduct.Controls.Add(cmbPrintDirection, 1, 0);
             tlpProduct.Controls.Add(nudLabelWidth, 1, 1);
-            tlpProduct.Location = new Point(3, 37);
+            tlpProduct.Location = new Point(3, 39);
             tlpProduct.Name = "tlpProduct";
             tlpProduct.RowCount = 4;
             tlpProduct.RowStyles.Add(new RowStyle(SizeType.Percent, 25F));
@@ -559,6 +559,8 @@
             // 
             회전.HeaderText = "회전";
             회전.Name = "회전";
+            회전.Resizable = DataGridViewTriState.True;
+            회전.SortMode = DataGridViewColumnSortMode.Automatic;
             // 
             // 크기
             // 
@@ -622,14 +624,6 @@
         private Label lblLabelWidth;
         private Label lblLabelHeight;
         private DataGridView dataGridView2;
-        private DataGridViewTextBoxColumn 순번;
-        private DataGridViewTextBoxColumn X좌표;
-        private DataGridViewTextBoxColumn Y좌표;
-        private DataGridViewTextBoxColumn 회전;
-        private DataGridViewTextBoxColumn 크기;
-        private DataGridViewTextBoxColumn X비율;
-        private DataGridViewTextBoxColumn Y비율;
-        private DataGridViewTextBoxColumn 데이터;
         private Label lblPrintQuantity;
         private Label lblPrintSpeed;
         private Label lblPrintDarkness;
@@ -658,5 +652,13 @@
         private Button btnReset;
         private Button btnSave;
         private Panel pnlPreview;
+        private DataGridViewTextBoxColumn 순번;
+        private DataGridViewTextBoxColumn X좌표;
+        private DataGridViewTextBoxColumn Y좌표;
+        private DataGridViewComboBoxColumn 회전;
+        private DataGridViewTextBoxColumn 크기;
+        private DataGridViewTextBoxColumn X비율;
+        private DataGridViewTextBoxColumn Y비율;
+        private DataGridViewTextBoxColumn 데이터;
     }
 }
