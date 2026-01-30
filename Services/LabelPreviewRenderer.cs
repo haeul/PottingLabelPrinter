@@ -48,16 +48,16 @@ namespace PottingLabelPrinter.Services
             float ConvertMmToPreviewX(double mm)
             {
                 double mmWithOffset = mm + (double)model.Geometry.OffsetXmm;
-                int quantizedDots = MmToDotsInt(mmWithOffset, dpi);
-                double quantizedMm = DotsToMm(quantizedDots, dpi);
+                int quantizedDots = LabelLayoutMath.MmToDotsInt(mmWithOffset, dpi);
+                double quantizedMm = LabelLayoutMath.DotsToMm(quantizedDots, dpi);
                 return originX + (float)(quantizedMm * mm2px);
             }
 
             float ConvertMmToPreviewY(double mm)
             {
                 double mmWithOffset = mm + (double)model.Geometry.OffsetYmm + NudgeYmm;
-                int quantizedDots = MmToDotsInt(mmWithOffset, dpi);
-                double quantizedMm = DotsToMm(quantizedDots, dpi);
+                int quantizedDots = LabelLayoutMath.MmToDotsInt(mmWithOffset, dpi);
+                double quantizedMm = LabelLayoutMath.DotsToMm(quantizedDots, dpi);
                 return originY + (float)(quantizedMm * mm2px);
             }
 
@@ -118,8 +118,8 @@ namespace PottingLabelPrinter.Services
         private static void DrawText(Graphics graphics, LabelElement element, double mm2px, int dpi)
         {
             double scaledFontMmY = (double)(element.FontSizeMm * element.ScaleY);
-            int hDots = Math.Max(1, MmToDotsInt(scaledFontMmY, dpi));
-            double hMmQ = DotsToMm(hDots, dpi);
+            int hDots = Math.Max(1, LabelLayoutMath.MmToDotsInt(scaledFontMmY, dpi));
+            double hMmQ = LabelLayoutMath.DotsToMm(hDots, dpi);
 
             float fontPx = (float)(hMmQ * mm2px);
             float fontPt = Math.Max(1f, fontPx * 72f / graphics.DpiY);
@@ -147,8 +147,8 @@ namespace PottingLabelPrinter.Services
         private static SizeF MeasureTextSizePx(Graphics g, LabelElement element, double mm2px, int dpi, out Font measureFont)
         {
             double scaledFontMmY = (double)(element.FontSizeMm * element.ScaleY);
-            int hDots = Math.Max(1, MmToDotsInt(scaledFontMmY, dpi));
-            double hMmQ = DotsToMm(hDots, dpi);
+            int hDots = Math.Max(1, LabelLayoutMath.MmToDotsInt(scaledFontMmY, dpi));
+            double hMmQ = LabelLayoutMath.DotsToMm(hDots, dpi);
 
             float fontPx = (float)(hMmQ * mm2px);
             float fontPt = Math.Max(1f, fontPx * 72f / g.DpiY);
@@ -212,9 +212,9 @@ namespace PottingLabelPrinter.Services
         }
 
         private static int MmToDotsInt(double mm, int dpi)
-            => (int)Math.Round(mm * dpi / 25.4);
+                    => LabelLayoutMath.MmToDotsInt(mm, dpi);
 
         private static double DotsToMm(int dots, int dpi)
-            => dots * 25.4 / dpi;
+            => LabelLayoutMath.DotsToMm(dots, dpi);
     }
 }

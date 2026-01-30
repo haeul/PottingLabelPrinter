@@ -110,7 +110,7 @@ namespace PottingLabelPrinter.Services
         }
 
         private static int MmToDots(double mm, int dpi)
-            => (int)Math.Round(mm * dpi / 25.4);
+            => LabelLayoutMath.MmToDotsInt(mm, dpi);
 
         private static string Escape(string value)
         {

@@ -17,6 +17,7 @@ namespace PottingLabelPrinter
     {
         private readonly PottingCompletionDetector _pottingDetector = new PottingCompletionDetector();
         private readonly Color _lightBorderColor = SystemColors.ControlDark;
+        private const int DefaultDpi = 203;
 
         // Modbus (2단계 최소 OOP)
         private readonly ModbusSession _modbusSession = new ModbusSession();
@@ -509,7 +510,7 @@ namespace PottingLabelPrinter
                     return;
                 }
 
-                var zpl = PottingLabelZpl.Build(payload);
+                var zpl = BuildZplForPayload(payload);
                 bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
 
                 if (!ok)
@@ -546,7 +547,7 @@ namespace PottingLabelPrinter
                     return "NG";
                 }
 
-                var zpl = PottingLabelZpl.Build(payload);
+                var zpl = BuildZplForPayload(payload);
                 bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
                 return ok ? "OK" : "NG";
             }
@@ -859,6 +860,13 @@ namespace PottingLabelPrinter
             r.Width -= 1;
             r.Height -= 1;
             e.Graphics.DrawRectangle(pen, r);
+        }
+
+        private string BuildZplForPayload(string payload)
+        {
+            var model = PrintSettingStorage.Load();
+            var resolved = LabelValueResolver.ApplyPlaceholders(model, payload, model.Print.StartNo, DateTime.Now);
+            return LabelZplBuilder.Build(resolved, DefaultDpi);
         }
     }
 }

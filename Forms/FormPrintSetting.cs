@@ -110,6 +110,7 @@ namespace PottingLabelPrinter.Forms
             CommitGridEdits();
 
             var model = BuildModelFromUi();
+            model = LabelValueResolver.ApplyPlaceholders(model, BuildSamplePayload(), model.Print.StartNo, DateTime.Now);
             var zpl = LabelZplBuilder.Build(model, DefaultDpi);
             bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
 
@@ -144,6 +145,10 @@ namespace PottingLabelPrinter.Forms
             ConfigureNumeric(nudLabelSpace, 0, 50, 0.1m, 1);
             ConfigureNumeric(nudXoffset, -50, 50, 0.1m, 1);
             ConfigureNumeric(nudYoffset, -50, 50, 0.1m, 1);
+
+            // GapMm은 현재 ZPL에 적용하지 않으므로 비활성화하여 혼선을 줄인다.
+            nudLabelSpace.Enabled = false;
+            lblLabelSpace.Text = "라벨 간격(미적용)";
 
             nudLabelWidth.ValueChanged += (_, __) => UpdateGridRangesFromLabel();
             nudLabelHeight.ValueChanged += (_, __) => UpdateGridRangesFromLabel();
@@ -458,7 +463,14 @@ namespace PottingLabelPrinter.Forms
             CommitGridEdits();
 
             var model = BuildModelFromUi();
+            model = LabelValueResolver.ApplyPlaceholders(model, BuildSamplePayload(), model.Print.StartNo, DateTime.Now);
             LabelPreviewRenderer.DrawPreview(e.Graphics, pnlPreview.ClientRectangle, model, DefaultDpi, PreviewPaddingPx);
+        }
+
+        private string BuildSamplePayload()
+        {
+            var now = DateTime.Now;
+            return $"TRAY0001 {now:yyyy-MM-dd HH:mm:ss}";
         }
     }
 }

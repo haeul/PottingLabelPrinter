@@ -82,10 +82,10 @@ namespace PottingLabelPrinter.Models
                         Xmm = 10.01m,
                         Ymm = 3.75m,
                         Rotation = 0m,
-                        FontSizeMm = 0.375m, // DM 모듈(mm) 개념(기존과 동일)
+                        FontSizeMm = 7.0m, // DM 한 변(mm)
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = ""
+                        Value = "{PAYLOAD}"
                     },
                     new LabelElement
                     {
@@ -99,7 +99,7 @@ namespace PottingLabelPrinter.Models
                         FontSizeMm = 2.50m,
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = "Tray0001"
+                        Value = "{TRAY}"
                     },
                     new LabelElement
                     {
@@ -113,7 +113,7 @@ namespace PottingLabelPrinter.Models
                         FontSizeMm = 2.50m,
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = "2026-01-29"
+                        Value = "{DATE}"
                     },
                     new LabelElement
                     {
@@ -127,7 +127,7 @@ namespace PottingLabelPrinter.Models
                         FontSizeMm = 2.50m,
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = "20:55:12"
+                        Value = "{TIME}"
                     }
                 }
             };
