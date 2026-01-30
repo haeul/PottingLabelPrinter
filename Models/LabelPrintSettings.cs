@@ -24,13 +24,12 @@ namespace PottingLabelPrinter.Models
         Time = 4
     }
 
-
     public class PrintRuntimeSettings
     {
         public int Darkness { get; set; } = 10;
         public int Speed { get; set; } = 1;
         public int Quantity { get; set; } = 1;
-        public int StartNo { get; set; } = 1; // 시작 번호
+        public int StartNo { get; set; } = 1; // 시작 번호 (PrintSetting 창 테스트 출력 전용)
     }
 
     public class LabelGeometrySettings
@@ -47,9 +46,14 @@ namespace PottingLabelPrinter.Models
         public LabelElementKey Key { get; set; }
         public int No { get; set; }
         public LabelElementType Type { get; set; } = LabelElementType.Text;
+
+        // NEW: 요소별 표시/출력 여부 (Grid 체크박스 용)
+        public bool ShowPreview { get; set; } = true;
+        public bool ShowPrint { get; set; } = true;
+
         public decimal Xmm { get; set; }
         public decimal Ymm { get; set; }
-        public decimal Rotation { get; set; } // NEW: 회전(도)
+        public decimal Rotation { get; set; } // 회전(도)
         public decimal FontSizeMm { get; set; } = 2.6m;
         public decimal ScaleX { get; set; } = 1m;
         public decimal ScaleY { get; set; } = 1m;
@@ -73,22 +77,26 @@ namespace PottingLabelPrinter.Models
                     {
                         No = 1,
                         Type = LabelElementType.DataMatrix,
+                        ShowPreview = true,
+                        ShowPrint = true,
                         Xmm = 10.01m,
                         Ymm = 3.75m,
                         Rotation = 0m,
-                        FontSizeMm = 0.375m, // BXN,3 에 맞춤 (모듈 mm)
+                        FontSizeMm = 0.375m, // DM 모듈(mm) 개념(기존과 동일)
                         ScaleX = 1m,
                         ScaleY = 1m,
-                        Value = "" // DM payload는 런타임에서 채움
+                        Value = ""
                     },
                     new LabelElement
                     {
                         No = 2,
                         Type = LabelElementType.Text,
+                        ShowPreview = true,
+                        ShowPrint = true,
                         Xmm = 18.77m,
                         Ymm = 3.75m,
                         Rotation = 0m,
-                        FontSizeMm = 2.50m, // A0N,20,20 ≒ 2.5mm
+                        FontSizeMm = 2.50m,
                         ScaleX = 1m,
                         ScaleY = 1m,
                         Value = "Tray0001"
@@ -97,6 +105,8 @@ namespace PottingLabelPrinter.Models
                     {
                         No = 3,
                         Type = LabelElementType.Text,
+                        ShowPreview = true,
+                        ShowPrint = true,
                         Xmm = 18.77m,
                         Ymm = 6.26m,
                         Rotation = 0m,
@@ -109,6 +119,8 @@ namespace PottingLabelPrinter.Models
                     {
                         No = 4,
                         Type = LabelElementType.Text,
+                        ShowPreview = true,
+                        ShowPrint = true,
                         Xmm = 18.77m,
                         Ymm = 8.76m,
                         Rotation = 0m,

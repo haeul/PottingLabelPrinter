@@ -105,7 +105,7 @@
             pnlBacrground.Controls.Add(dataGridView2);
             pnlBacrground.Location = new Point(1, 1);
             pnlBacrground.Name = "pnlBacrground";
-            pnlBacrground.Size = new Size(972, 945);
+            pnlBacrground.Size = new Size(972, 522);
             pnlBacrground.TabIndex = 8;
             // 
             // panel2
@@ -527,17 +527,17 @@
             dataGridView2.Columns.AddRange(new DataGridViewColumn[] { 순번, X좌표, Y좌표, 회전, 크기, X비율, Y비율, 데이터 });
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle2.BackColor = SystemColors.Window;
-            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            dataGridViewCellStyle2.Font = new Font("맑은 고딕", 9F);
             dataGridViewCellStyle2.ForeColor = SystemColors.ControlText;
             dataGridViewCellStyle2.SelectionBackColor = SystemColors.Highlight;
             dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
             dataGridView2.DefaultCellStyle = dataGridViewCellStyle2;
             dataGridView2.EnableHeadersVisualStyles = false;
-            dataGridView2.Location = new Point(10, 344);
+            dataGridView2.Location = new Point(10, 336);
             dataGridView2.Name = "dataGridView2";
             dataGridView2.RowHeadersWidth = 62;
-            dataGridView2.Size = new Size(952, 587);
+            dataGridView2.Size = new Size(952, 176);
             dataGridView2.TabIndex = 0;
             // 
             // 순번
@@ -584,7 +584,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(977, 945);
+            ClientSize = new Size(977, 525);
             Controls.Add(pnlBacrground);
             Margin = new Padding(2);
             Name = "FormPrintSetting";

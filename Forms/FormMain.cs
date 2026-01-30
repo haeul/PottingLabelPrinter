@@ -113,6 +113,8 @@ namespace PottingLabelPrinter
             _reconnectTimer.Interval = ReconnectTickMs;
             _reconnectTimer.Tick += ReconnectTimer_Tick;
             _reconnectTimer.Start();
+
+            HookRunStartNoUi();
         }
 
         // =========================
@@ -304,6 +306,25 @@ namespace PottingLabelPrinter
             {
                 // 실패해도 앱은 계속 동작
             }
+        }
+
+        private void HookRunStartNoUi()
+        {
+            // lblTotal이 이미 있다면
+            lblTotal.Click += (_, __) =>
+            {
+                int current = LabelSequenceState.GetCurrentNo();
+                using (var f = new FormRunStartNo(current))
+                {
+                    if (f.ShowDialog(this) == DialogResult.OK)
+                    {
+                        LabelSequenceState.SetCurrentNo(f.SelectedNo);
+
+                        // 선택: 라벨 텍스트에 반영
+                        // lblTotal.Text = $"Total: ... (NextNo={LabelSequenceState.GetCurrentNo()})";
+                    }
+                }
+            };
         }
 
         private void BtnPathSetting_Click(object? sender, EventArgs e)

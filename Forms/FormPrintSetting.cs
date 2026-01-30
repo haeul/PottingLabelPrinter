@@ -16,6 +16,8 @@ namespace PottingLabelPrinter.Forms
         private bool _isLoading;
 
         private const string ColNo = "No";
+        private const string ColShowPreview = "ShowPreview";
+        private const string ColShowPrint = "ShowPrint";
         private const string ColX = "Xmm";
         private const string ColY = "Ymm";
         private const string ColRotation = "Rotation";
@@ -104,6 +106,9 @@ namespace PottingLabelPrinter.Forms
                 return;
             }
 
+            // Grid 편집 중이면 커밋 먼저
+            CommitGridEdits();
+
             var model = BuildModelFromUi();
             var zpl = LabelZplBuilder.Build(model, DefaultDpi);
             bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
@@ -182,6 +187,23 @@ namespace PottingLabelPrinter.Forms
                 SortMode = DataGridViewColumnSortMode.NotSortable
             });
 
+            // NEW: Preview/Print 체크박스
+            dataGridView2.Columns.Add(new DataGridViewCheckBoxColumn
+            {
+                Name = ColShowPreview,
+                HeaderText = "미리보기",
+                Width = 72,
+                ThreeState = false
+            });
+
+            dataGridView2.Columns.Add(new DataGridViewCheckBoxColumn
+            {
+                Name = ColShowPrint,
+                HeaderText = "인쇄",
+                Width = 54,
+                ThreeState = false
+            });
+
             dataGridView2.Columns.Add(BuildNumericColumn(ColX, "X(mm)", 0, 500, 0.1m, 1));
             dataGridView2.Columns.Add(BuildNumericColumn(ColY, "Y(mm)", 0, 500, 0.1m, 1));
             dataGridView2.Columns.Add(BuildNumericColumn(ColRotation, "회전", 0, 360, 1m, 0));
@@ -205,6 +227,10 @@ namespace PottingLabelPrinter.Forms
             };
             dataGridView2.Columns.Add(typeColumn);
 
+            // ---- 즉시 반영(CommitEdit 흐름) ----
+            dataGridView2.CurrentCellDirtyStateChanged += DataGridView2_CurrentCellDirtyStateChanged;
+            dataGridView2.CellValueChanged += DataGridView2_CellValueChanged;
+
             dataGridView2.CellEndEdit += (_, __) => RefreshPreview();
             dataGridView2.RowsAdded += (_, __) => UpdateRowNumbers();
             dataGridView2.RowsRemoved += (_, __) => UpdateRowNumbers();
@@ -212,6 +238,24 @@ namespace PottingLabelPrinter.Forms
 
             dataGridView2.ResumeLayout();
             UpdateGridRangesFromLabel();
+        }
+
+        private void DataGridView2_CurrentCellDirtyStateChanged(object? sender, EventArgs e)
+        {
+            if (_isLoading) return;
+            if (!dataGridView2.IsCurrentCellDirty) return;
+
+            // 체크박스/콤보박스/편집 컨트롤 값 변경 즉시 커밋
+            dataGridView2.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        }
+
+        private void DataGridView2_CellValueChanged(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (_isLoading) return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            // 값 변경 즉시 미리보기 갱신
+            RefreshPreview();
         }
 
         private LabelNumericColumn BuildNumericColumn(string name, string header, decimal min, decimal max, decimal increment, int decimals)
@@ -280,6 +324,10 @@ namespace PottingLabelPrinter.Forms
             {
                 var rowIndex = dataGridView2.Rows.Add();
                 var row = dataGridView2.Rows[rowIndex];
+
+                row.Cells[ColShowPreview].Value = element.ShowPreview;
+                row.Cells[ColShowPrint].Value = element.ShowPrint;
+
                 row.Cells[ColX].Value = element.Xmm;
                 row.Cells[ColY].Value = element.Ymm;
                 row.Cells[ColRotation].Value = element.Rotation;
@@ -298,12 +346,20 @@ namespace PottingLabelPrinter.Forms
             for (int i = 0; i < dataGridView2.Rows.Count; i++)
             {
                 var row = dataGridView2.Rows[i];
-                if (!row.IsNewRow)
-                {
-                    row.Cells[ColNo].Value = (i + 1).ToString();
-                    if (row.Cells[ColType].Value == null)
-                        row.Cells[ColType].Value = LabelElementType.Text;
-                }
+                if (row.IsNewRow)
+                    continue;
+
+                row.Cells[ColNo].Value = (i + 1).ToString();
+
+                // 기본값 보정
+                if (row.Cells[ColType].Value == null)
+                    row.Cells[ColType].Value = LabelElementType.Text;
+
+                if (row.Cells[ColShowPreview].Value == null)
+                    row.Cells[ColShowPreview].Value = true;
+
+                if (row.Cells[ColShowPrint].Value == null)
+                    row.Cells[ColShowPrint].Value = true;
             }
         }
 
@@ -341,9 +397,14 @@ namespace PottingLabelPrinter.Forms
             foreach (DataGridViewRow row in dataGridView2.Rows)
             {
                 if (row.IsNewRow) continue;
+
                 elements.Add(new LabelElement
                 {
                     No = elements.Count + 1,
+
+                    ShowPreview = ReadBool(row.Cells[ColShowPreview].Value, true),
+                    ShowPrint = ReadBool(row.Cells[ColShowPrint].Value, true),
+
                     Xmm = ReadDecimal(row.Cells[ColX].Value),
                     Ymm = ReadDecimal(row.Cells[ColY].Value),
                     Rotation = ReadDecimal(row.Cells[ColRotation].Value),
@@ -356,6 +417,14 @@ namespace PottingLabelPrinter.Forms
             }
 
             return elements;
+        }
+
+        private bool ReadBool(object? value, bool fallback)
+        {
+            if (value == null) return fallback;
+            if (value is bool b) return b;
+            if (bool.TryParse(value.ToString(), out var parsed)) return parsed;
+            return fallback;
         }
 
         private decimal ReadDecimal(object? value, decimal fallback = 0m)
@@ -373,8 +442,21 @@ namespace PottingLabelPrinter.Forms
             pnlPreview.Invalidate();
         }
 
+        private void CommitGridEdits()
+        {
+            // 현재 편집 중이면 커밋해서 BuildModelFromUi가 최신 값을 읽게 함
+            if (dataGridView2.IsCurrentCellInEditMode)
+            {
+                dataGridView2.EndEdit();
+                dataGridView2.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
         private void PnlPreview_Paint(object? sender, PaintEventArgs e)
         {
+            // 미리보기는 “현재 편집 중 값”도 반영되도록 커밋 후 모델 생성
+            CommitGridEdits();
+
             var model = BuildModelFromUi();
             LabelPreviewRenderer.DrawPreview(e.Graphics, pnlPreview.ClientRectangle, model, DefaultDpi, PreviewPaddingPx);
         }

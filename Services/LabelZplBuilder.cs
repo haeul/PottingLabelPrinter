@@ -1,4 +1,5 @@
-﻿using System;
+﻿// LabelZplBuilder.cs
+using System;
 using System.Collections.Generic;
 using System.Text;
 using PottingLabelPrinter.Models;
@@ -7,7 +8,7 @@ namespace PottingLabelPrinter.Services
 {
     public static class LabelZplBuilder
     {
-        private const double NudgeYmm = 0.6; // NEW: 출력 미세 보정
+        private const double NudgeYmm = 0.6; // 출력 미세 보정
 
         public static string Build(PrintSettingModel model, int dpi)
         {
@@ -29,7 +30,10 @@ namespace PottingLabelPrinter.Services
         private static string BuildSingle(PrintSettingModel model, int dpi, int currentNo)
         {
             int pw = MmToDots((double)model.Geometry.LabelWidthMm, dpi);
-            double labelLengthMm = (double)model.Geometry.LabelHeightMm + (double)model.Geometry.GapMm; // NEW: gap 반영
+
+            // A안: 라벨 간격(GapMm)은 ZPL에 반영하지 않는다.
+            // (GapMm을 넣으면 ^LL(피드 길이)이 늘어나서 출력 결과가 달라질 수 있음)
+            double labelLengthMm = (double)model.Geometry.LabelHeightMm;
             int ll = MmToDots(labelLengthMm, dpi);
 
             var sb = new StringBuilder(512);
@@ -46,6 +50,7 @@ namespace PottingLabelPrinter.Services
 
             foreach (var element in model.Elements ?? new List<LabelElement>())
             {
+                if (!element.ShowPrint) continue;
                 AppendElement(sb, element, model.Geometry, dpi, currentNo);
             }
 
@@ -62,13 +67,15 @@ namespace PottingLabelPrinter.Services
             int y = MmToDots((double)(yMm + (decimal)NudgeYmm), dpi);
             char orientation = ToOrientation(element.Rotation);
 
-            string value = (element.Value ?? string.Empty).Replace("{NO}", currentNo.ToString()); // NEW
+            string value = (element.Value ?? string.Empty).Replace("{NO}", currentNo.ToString());
             value = Escape(value);
 
             if (element.Type == LabelElementType.DataMatrix)
             {
-                decimal moduleMm = Math.Max(0.1m, element.FontSizeMm * element.ScaleX);
-                int moduleDots = Math.Max(1, MmToDots((double)moduleMm, dpi));
+                // SSOT: FontSizeMm = 목표 한 변(mm), ScaleX/ScaleY 무시
+                var dm = LabelLayoutMath.CalcDataMatrixDots(element, dpi);
+                int moduleDots = Math.Max(1, dm.ModuleDots);
+
                 sb.AppendLine($"^FO{x},{y}^BX{orientation},{moduleDots},200^FD{value}^FS");
                 return;
             }
