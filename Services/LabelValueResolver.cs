@@ -1,4 +1,5 @@
-﻿using System;
+﻿// LabelValueResolver.cs
+using System;
 using System.Collections.Generic;
 using PottingLabelPrinter.Models;
 
@@ -6,7 +7,12 @@ namespace PottingLabelPrinter.Services
 {
     public static class LabelValueResolver
     {
-        public static PrintSettingModel ApplyPlaceholders(PrintSettingModel model, string payload, int currentNo, DateTime? now = null, bool resolveNo = true)
+        public static PrintSettingModel ApplyPlaceholders(
+            PrintSettingModel model,
+            string payload,
+            int currentNo,
+            DateTime? now = null,
+            bool resolveNo = true)
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
 
@@ -29,6 +35,9 @@ namespace PottingLabelPrinter.Services
             if (date == "-") date = resolvedNow.ToString("yyyy-MM-dd");
             if (time == "-") time = resolvedNow.ToString("HH:mm:ss");
 
+            // 핵심: Preview에서 {NO}도 Print처럼 4자리 패딩 규칙 통일
+            string noText = Math.Max(0, currentNo).ToString("0000");
+
             foreach (var element in resolved.Elements)
             {
                 string value = element.Value ?? string.Empty;
@@ -43,7 +52,7 @@ namespace PottingLabelPrinter.Services
                              .Replace("{TIME}", time);
 
                 if (resolveNo)
-                    value = value.Replace("{NO}", currentNo.ToString());
+                    value = value.Replace("{NO}", noText);   // <-- 변경 포인트
 
                 element.Value = value;
             }
