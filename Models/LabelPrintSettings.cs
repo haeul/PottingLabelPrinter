@@ -75,6 +75,7 @@ namespace PottingLabelPrinter.Models
                 {
                     new LabelElement
                     {
+                        Key = LabelElementKey.DataMatrix,
                         No = 1,
                         Type = LabelElementType.DataMatrix,
                         ShowPreview = true,
@@ -89,6 +90,7 @@ namespace PottingLabelPrinter.Models
                     },
                     new LabelElement
                     {
+                        Key = LabelElementKey.TrayNo,
                         No = 2,
                         Type = LabelElementType.Text,
                         ShowPreview = true,
@@ -103,6 +105,7 @@ namespace PottingLabelPrinter.Models
                     },
                     new LabelElement
                     {
+                        Key = LabelElementKey.Date,
                         No = 3,
                         Type = LabelElementType.Text,
                         ShowPreview = true,
@@ -117,6 +120,7 @@ namespace PottingLabelPrinter.Models
                     },
                     new LabelElement
                     {
+                        Key = LabelElementKey.Date,
                         No = 4,
                         Type = LabelElementType.Text,
                         ShowPreview = true,

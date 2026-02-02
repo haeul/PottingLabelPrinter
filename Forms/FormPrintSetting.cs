@@ -123,7 +123,8 @@ namespace PottingLabelPrinter.Forms
             // 수동 출력 전용: 시작 번호/수량은 여기서만 사용하고 자동 출력 시퀀스에는 영향 없음
             var model = BuildModelFromUi();
             var samplePayload = BuildSamplePayload();
-            model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, DateTime.Now, resolveNo: false);
+            var manualNow = GetManualDateTime();
+            model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, manualNow, resolveNo: false);
             var zpl = LabelZplBuilder.Build(model, DefaultDpi, model.Print.StartNo, model.Print.Quantity);
             ZplDebugLogger.Dump("print-setting", samplePayload, zpl);
 
@@ -350,6 +351,19 @@ namespace PottingLabelPrinter.Forms
             if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
 
             // 값 변경 즉시 미리보기 갱신
+            if (dataGridView2.Columns[e.ColumnIndex].Name == ColValue)
+            {
+                var row = dataGridView2.Rows[e.RowIndex];
+                row.Tag = ReadElementKey(row);
+                if (row.Tag is LabelElementKey key)
+                {
+                    var currentValue = (row.Cells[ColValue].Value ?? "").ToString() ?? "";
+                    var normalized = NormalizeValueByKey(key, currentValue);
+                    if (!string.Equals(currentValue, normalized, StringComparison.Ordinal))
+                        row.Cells[ColValue].Value = normalized;
+                }
+                ApplyValueEditPolicy(row);
+            }
             RefreshPreview();
         }
 
@@ -431,6 +445,9 @@ namespace PottingLabelPrinter.Forms
                 row.Cells[ColScaleY].Value = element.ScaleY;
                 row.Cells[ColValue].Value = element.Value;
                 row.Cells[ColType].Value = element.Type;
+                row.Tag = ResolveElementKey(element);
+
+                ApplyValueEditPolicy(row);
             }
 
             UpdateRowNumbers();
@@ -513,6 +530,7 @@ namespace PottingLabelPrinter.Forms
 
                 elements.Add(new LabelElement
                 {
+                    Key = ReadElementKey(row),
                     No = elements.Count + 1,
 
                     ShowPreview = ReadBool(row.Cells[ColShowPreview].Value, true),
@@ -524,7 +542,9 @@ namespace PottingLabelPrinter.Forms
                     FontSizeMm = ReadDecimal(row.Cells[ColFont].Value, 2.6m),
                     ScaleX = ReadDecimal(row.Cells[ColScaleX].Value, 1m),
                     ScaleY = ReadDecimal(row.Cells[ColScaleY].Value, 1m),
-                    Value = (row.Cells[ColValue].Value ?? "").ToString() ?? "",
+                    Value = NormalizeValueByKey(
+                        ReadElementKey(row),
+                        (row.Cells[ColValue].Value ?? "").ToString() ?? ""),
                     Type = row.Cells[ColType].Value is LabelElementType type ? type : LabelElementType.Text
                 });
             }
@@ -572,7 +592,8 @@ namespace PottingLabelPrinter.Forms
 
             var model = BuildModelFromUi();
             var samplePayload = BuildSamplePayload();
-            model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, DateTime.Now, resolveNo: true);
+            var manualNow = GetManualDateTime();
+            model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, manualNow, resolveNo: true);
             LabelPreviewRenderer.DrawPreview(e.Graphics, pnlPreview.ClientRectangle, model, DefaultDpi, PreviewPaddingPx);
         }
 
@@ -580,13 +601,74 @@ namespace PottingLabelPrinter.Forms
         {
             var now = GetManualDateTime();
             // 핵심: 0000 같은 고정 숫자 대신 {NO}를 남긴다
-            return $"TRAY{{NO}} {now:yyyy-MM-dd HH:mm:ss}";
+            return "TRAY{NO}";
         }
         private DateTime GetManualDateTime()
         {
             var date = dtpManualDate.Value.Date;
             var time = dtpManualTime.Value;
             return date.AddHours(time.Hour).AddMinutes(time.Minute).AddSeconds(time.Second);
+        }
+
+        private LabelElementKey ResolveElementKey(LabelElement element)
+        {
+            if (element.Key != default)
+                return element.Key;
+
+            string value = (element.Value ?? "").Trim();
+            if (value.Equals("{DATE}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.Date;
+            if (value.Equals("{TIME}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.Time;
+            if (value.Equals("{TRAY}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.TrayNo;
+            if (value.Equals("{PAYLOAD}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.DataMatrix;
+
+            return default;
+        }
+
+        private LabelElementKey ReadElementKey(DataGridViewRow row)
+        {
+            if (row.Tag is LabelElementKey key)
+                return key;
+
+            string value = (row.Cells[ColValue].Value ?? "").ToString() ?? "";
+            if (value.Equals("{DATE}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.Date;
+            if (value.Equals("{TIME}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.Time;
+            if (value.Equals("{TRAY}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.TrayNo;
+            if (value.Equals("{PAYLOAD}", StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.DataMatrix;
+
+            return default;
+        }
+
+        private string NormalizeValueByKey(LabelElementKey key, string currentValue)
+        {
+            return key switch
+            {
+                LabelElementKey.Date => "{DATE}",
+                LabelElementKey.Time => "{TIME}",
+                _ => currentValue
+            };
+        }
+
+        private void ApplyValueEditPolicy(DataGridViewRow row)
+        {
+            if (row.Cells[ColValue] is not DataGridViewCell valueCell)
+                return;
+
+            var key = ReadElementKey(row);
+            bool lockValue = key == LabelElementKey.Date || key == LabelElementKey.Time;
+            valueCell.ReadOnly = lockValue;
+
+            if (lockValue)
+            {
+                valueCell.Style.BackColor = Color.Gainsboro;
+            }
         }
     }
 }
