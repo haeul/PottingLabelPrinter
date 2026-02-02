@@ -1,4 +1,6 @@
-﻿namespace PottingLabelPrinter.Forms
+﻿using System.Windows.Forms;
+
+namespace PottingLabelPrinter.Forms
 {
     partial class FormPrintSetting
     {
@@ -34,6 +36,11 @@
             pnlBacrground = new Panel();
             panel2 = new Panel();
             tableLayoutPanel2 = new TableLayoutPanel();
+            tableLayoutPanel3 = new TableLayoutPanel();
+            dtpManualTime = new DateTimePicker();
+            lblManualTime = new Label();
+            dtpManualDate = new DateTimePicker();
+            lblManualDate = new Label();
             btnPrint = new Button();
             btnReset = new Button();
             btnSave = new Button();
@@ -112,6 +119,7 @@
             // 
             panel2.BackColor = SystemColors.Control;
             panel2.Controls.Add(tableLayoutPanel2);
+            panel2.Controls.Add(tableLayoutPanel3);
             panel2.Controls.Add(pnlPreview);
             panel2.Controls.Add(lblPreview);
             panel2.Location = new Point(563, 86);
@@ -136,6 +144,67 @@
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
             tableLayoutPanel2.Size = new Size(399, 51);
             tableLayoutPanel2.TabIndex = 2;
+            // 
+            // tableLayoutPanel3
+            // 
+            tableLayoutPanel3.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+            tableLayoutPanel3.ColumnCount = 4;
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
+            tableLayoutPanel3.Controls.Add(dtpManualTime, 3, 0);
+            tableLayoutPanel3.Controls.Add(lblManualTime, 2, 0);
+            tableLayoutPanel3.Controls.Add(dtpManualDate, 1, 0);
+            tableLayoutPanel3.Controls.Add(lblManualDate, 0, 0);
+            tableLayoutPanel3.Location = new Point(3, 150);
+            tableLayoutPanel3.Name = "tableLayoutPanel3";
+            tableLayoutPanel3.RowCount = 1;
+            tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel3.Size = new Size(393, 32);
+            tableLayoutPanel3.TabIndex = 3;
+            // 
+            // dtpManualTime
+            // 
+            dtpManualTime.Dock = DockStyle.Fill;
+            dtpManualTime.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            dtpManualTime.Location = new Point(279, 4);
+            dtpManualTime.Name = "dtpManualTime";
+            dtpManualTime.Size = new Size(110, 25);
+            dtpManualTime.TabIndex = 3;
+            // 
+            // lblManualTime
+            // 
+            lblManualTime.Dock = DockStyle.Fill;
+            lblManualTime.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblManualTime.Location = new Point(195, 1);
+            lblManualTime.Margin = new Padding(0);
+            lblManualTime.Name = "lblManualTime";
+            lblManualTime.Size = new Size(80, 30);
+            lblManualTime.TabIndex = 2;
+            lblManualTime.Text = "시간";
+            lblManualTime.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // dtpManualDate
+            // 
+            dtpManualDate.Dock = DockStyle.Fill;
+            dtpManualDate.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            dtpManualDate.Location = new Point(82, 4);
+            dtpManualDate.Name = "dtpManualDate";
+            dtpManualDate.Size = new Size(110, 25);
+            dtpManualDate.TabIndex = 1;
+            // 
+            // lblManualDate
+            // 
+            lblManualDate.Dock = DockStyle.Fill;
+            lblManualDate.Font = new Font("Segoe UI Semibold", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblManualDate.Location = new Point(1, 1);
+            lblManualDate.Margin = new Padding(0);
+            lblManualDate.Name = "lblManualDate";
+            lblManualDate.Size = new Size(76, 30);
+            lblManualDate.TabIndex = 0;
+            lblManualDate.Text = "날짜";
+            lblManualDate.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // btnPrint
             // 
@@ -172,7 +241,7 @@
             pnlPreview.BackColor = SystemColors.Control;
             pnlPreview.Location = new Point(3, 37);
             pnlPreview.Name = "pnlPreview";
-            pnlPreview.Size = new Size(393, 143);
+            pnlPreview.Size = new Size(393, 110);
             pnlPreview.TabIndex = 1;
             // 
             // lblPreview
@@ -643,6 +712,11 @@
         private Label lblXoffset;
         private Label lblLabelSpace;
         private Panel panel2;
+        private TableLayoutPanel tableLayoutPanel3;
+        private DateTimePicker dtpManualTime;
+        private Label lblManualTime;
+        private DateTimePicker dtpManualDate;
+        private Label lblManualDate;
         private Label lblPreview;
         private NumericUpDown nudLabelStartNum;
         private Label lblLabelStartNum;

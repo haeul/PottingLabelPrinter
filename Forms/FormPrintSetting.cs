@@ -14,6 +14,11 @@ namespace PottingLabelPrinter.Forms
         private const double PreviewPaddingPx = 10.0;
         private PrintSettingModel _model = PrintSettingStorage.Load();
         private bool _isLoading;
+        private readonly System.Windows.Forms.Timer _dateTimeTimer = new System.Windows.Forms.Timer();
+        private bool _manualDateOverride;
+        private bool _manualTimeOverride;
+        private bool _isUpdatingDateTime;
+
 
         private const string ColNo = "No";
         private const string ColShowPreview = "ShowPreview";
@@ -38,6 +43,7 @@ namespace PottingLabelPrinter.Forms
 
             Load += FormPrintSetting_Load;
             pnlPreview.Paint += PnlPreview_Paint;
+            FormClosed += FormPrintSetting_FormClosed;
         }
 
         private void FormPrintSetting_Load(object sender, EventArgs e)
@@ -47,6 +53,12 @@ namespace PottingLabelPrinter.Forms
             SetupGrid();
             ApplyElementsToGrid(_model.Elements);
             RefreshPreview();
+        }
+
+        private void FormPrintSetting_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            _dateTimeTimer.Stop();
+            _dateTimeTimer.Tick -= DateTimeTimer_Tick;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -112,7 +124,7 @@ namespace PottingLabelPrinter.Forms
             var model = BuildModelFromUi();
             var samplePayload = BuildSamplePayload();
             model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, DateTime.Now, resolveNo: false);
-            var zpl = LabelZplBuilder.Build(model, DefaultDpi);
+            var zpl = LabelZplBuilder.Build(model, DefaultDpi, model.Print.StartNo, model.Print.Quantity);
             ZplDebugLogger.Dump("print-setting", samplePayload, zpl);
 
             bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
@@ -162,9 +174,58 @@ namespace PottingLabelPrinter.Forms
             }
 
             cmbPrintDirection.SelectedIndexChanged += (_, __) => RefreshPreview();
+            dtpManualDate.Format = DateTimePickerFormat.Custom;
+            dtpManualDate.CustomFormat = "yyyy-MM-dd";
+            dtpManualTime.Format = DateTimePickerFormat.Custom;
+            dtpManualTime.CustomFormat = "HH:mm:ss";
+            dtpManualTime.ShowUpDown = true;
+            dtpManualDate.ValueChanged += DtpManualDate_ValueChanged;
+            dtpManualTime.ValueChanged += DtpManualTime_ValueChanged;
+
+            _dateTimeTimer.Interval = 1000;
+            _dateTimeTimer.Tick += DateTimeTimer_Tick;
+            _manualDateOverride = false;
+            _manualTimeOverride = false;
+            UpdateManualDateTime(DateTime.Now, updateDate: true, updateTime: true);
+            _dateTimeTimer.Start();
             _isLoading = false;
         }
 
+        private void DateTimeTimer_Tick(object? sender, EventArgs e)
+        {
+            var now = DateTime.Now;
+            bool updateDate = !_manualDateOverride;
+            bool updateTime = !_manualTimeOverride;
+            if (!updateDate && !updateTime)
+                return;
+
+            UpdateManualDateTime(now, updateDate, updateTime);
+            RefreshPreview();
+        }
+
+        private void UpdateManualDateTime(DateTime now, bool updateDate, bool updateTime)
+        {
+            _isUpdatingDateTime = true;
+            if (updateDate)
+                dtpManualDate.Value = now.Date;
+            if (updateTime)
+                dtpManualTime.Value = DateTime.Today.Add(now.TimeOfDay);
+            _isUpdatingDateTime = false;
+        }
+
+        private void DtpManualDate_ValueChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingDateTime) return;
+            _manualDateOverride = true;
+            RefreshPreview();
+        }
+
+        private void DtpManualTime_ValueChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingDateTime) return;
+            _manualTimeOverride = true;
+            RefreshPreview();
+        }
         private void ConfigureNumeric(NumericUpDown control, decimal min, decimal max, decimal increment, int decimals)
         {
             control.Minimum = min;
@@ -517,9 +578,15 @@ namespace PottingLabelPrinter.Forms
 
         private string BuildSamplePayload()
         {
-            var now = DateTime.Now;
+            var now = GetManualDateTime();
             // 핵심: 0000 같은 고정 숫자 대신 {NO}를 남긴다
             return $"TRAY{{NO}} {now:yyyy-MM-dd HH:mm:ss}";
+        }
+        private DateTime GetManualDateTime()
+        {
+            var date = dtpManualDate.Value.Date;
+            var time = dtpManualTime.Value;
+            return date.AddHours(time.Hour).AddMinutes(time.Minute).AddSeconds(time.Second);
         }
     }
 }

@@ -873,17 +873,11 @@ namespace PottingLabelPrinter
         private string BuildZplForPayload(string payload, int? startNoOverride = null, int? quantityOverride = null)
         {
             var model = PrintSettingStorage.Load();
+            int startNo = startNoOverride ?? model.Print.StartNo;
+            int quantity = quantityOverride ?? model.Print.Quantity;
 
-            if (startNoOverride.HasValue)
-                model.Print.StartNo = startNoOverride.Value;
-
-            if (quantityOverride.HasValue)
-                model.Print.Quantity = quantityOverride.Value;
-
-            // ?  startNoOverride   ?,
-            //  (?)  ? ?.
-            var resolved = LabelValueResolver.ApplyPlaceholders(model, payload, model.Print.StartNo, DateTime.Now, resolveNo: false);
-            var zpl = LabelZplBuilder.Build(resolved, DefaultDpi);
+            var resolved = LabelValueResolver.ApplyPlaceholders(model, payload, startNo, DateTime.Now, resolveNo: false);
+            var zpl = LabelZplBuilder.Build(resolved, DefaultDpi, startNo, quantity);
             ZplDebugLogger.Dump("form-main", payload, zpl);
             return zpl;
         }

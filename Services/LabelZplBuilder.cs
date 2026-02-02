@@ -14,13 +14,20 @@ namespace PottingLabelPrinter.Services
         {
             if (model == null) throw new ArgumentNullException(nameof(model));
 
-            int qty = Math.Max(1, model.Print.Quantity);
-            int startNo = Math.Max(1, model.Print.StartNo);
+            return Build(model, dpi, model.Print.StartNo, model.Print.Quantity);
+        }
+
+        public static string Build(PrintSettingModel model, int dpi, int startNo, int quantity)
+        {
+            if (model == null) throw new ArgumentNullException(nameof(model));
+
+            int qty = Math.Max(1, quantity);
+            int resolvedStartNo = Math.Max(1, startNo);
 
             var sb = new StringBuilder();
             for (int i = 0; i < qty; i++)
             {
-                int currentNo = startNo + i;
+                int currentNo = resolvedStartNo + i;
                 sb.Append(BuildSingle(model, dpi, currentNo));
             }
 
