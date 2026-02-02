@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Globalization;
 
 namespace PottingLabelPrinter.Forms
 {
@@ -31,6 +32,10 @@ namespace PottingLabelPrinter.Forms
         private const string ColScaleY = "ScaleY";
         private const string ColValue = "Value";
         private const string ColType = "Type";
+        private const string PlaceholderDate = "{DATE}";
+        private const string PlaceholderTime = "{TIME}";
+        private const string PlaceholderTray = "{TRAY}";
+        private const string PlaceholderPayload = "{PAYLOAD}";
 
         public FormPrintSetting()
         {
@@ -300,6 +305,7 @@ namespace PottingLabelPrinter.Forms
             // ---- 즉시 반영(CommitEdit 흐름) ----
             dataGridView2.CurrentCellDirtyStateChanged += DataGridView2_CurrentCellDirtyStateChanged;
             dataGridView2.CellValueChanged += DataGridView2_CellValueChanged;
+            dataGridView2.CellBeginEdit += DataGridView2_CellBeginEdit;
 
             dataGridView2.CellEndEdit += (_, __) => RefreshPreview();
             dataGridView2.RowsAdded += (_, __) => UpdateRowNumbers();
@@ -366,6 +372,21 @@ namespace PottingLabelPrinter.Forms
             }
             RefreshPreview();
         }
+
+        private void DataGridView2_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
+        {
+            if (_isLoading) return;
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+
+            if (dataGridView2.Columns[e.ColumnIndex].Name != ColValue)
+                return;
+
+            var row = dataGridView2.Rows[e.RowIndex];
+            var key = GetRowKey(row, row.Cells[ColValue].Value?.ToString() ?? string.Empty);
+            if (key == LabelElementKey.Date || key == LabelElementKey.Time)
+                e.Cancel = true;
+        }
+
 
         private LabelNumericColumn BuildNumericColumn(string name, string header, decimal min, decimal max, decimal increment, int decimals)
         {
@@ -443,7 +464,11 @@ namespace PottingLabelPrinter.Forms
                 row.Cells[ColFont].Value = element.FontSizeMm;
                 row.Cells[ColScaleX].Value = element.ScaleX;
                 row.Cells[ColScaleY].Value = element.ScaleY;
-                row.Cells[ColValue].Value = element.Value;
+                var inferredKey = element.Key == 0 ? InferKeyFromValue(element.Value) : element.Key;
+                row.Tag = inferredKey;
+                row.Cells[ColValue].Value = NormalizeValueForKey(element.Value, inferredKey);
+                row.Cells[ColType].Value = element.Type;
+                ApplySystemRowBehavior(row, inferredKey);
                 row.Cells[ColType].Value = element.Type;
                 row.Tag = ResolveElementKey(element);
 
@@ -490,7 +515,77 @@ namespace PottingLabelPrinter.Forms
                 if (row.Cells[ColRotation].Value == null)
                     row.Cells[ColRotation].Value = 0;
 
+                if (row.Tag is LabelElementKey key)
+                    ApplySystemRowBehavior(row, key);
             }
+        }
+
+        private static LabelElementKey InferKeyFromValue(string? value)
+        {
+            if (string.Equals(value, PlaceholderDate, StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.Date;
+            if (string.Equals(value, PlaceholderTime, StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.Time;
+            if (string.Equals(value, PlaceholderTray, StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.TrayNo;
+            if (string.Equals(value, PlaceholderPayload, StringComparison.OrdinalIgnoreCase))
+                return LabelElementKey.DataMatrix;
+            if (IsDateValue(value))
+                return LabelElementKey.Date;
+            if (IsTimeValue(value))
+                return LabelElementKey.Time;
+            return 0;
+        }
+
+        private static string NormalizeValueForKey(string? value, LabelElementKey key)
+        {
+            return key switch
+            {
+                LabelElementKey.Date => PlaceholderDate,
+                LabelElementKey.Time => PlaceholderTime,
+                _ => value ?? string.Empty
+            };
+        }
+
+        private static bool IsDateValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            return DateTime.TryParseExact(
+                value.Trim(),
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out _);
+        }
+
+        private static bool IsTimeValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            return DateTime.TryParseExact(
+                value.Trim(),
+                "HH:mm:ss",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out _);
+        }
+
+        private static LabelElementKey GetRowKey(DataGridViewRow row, string value)
+        {
+            if (row.Tag is LabelElementKey key)
+                return key;
+            return InferKeyFromValue(value);
+        }
+
+        private void ApplySystemRowBehavior(DataGridViewRow row, LabelElementKey key)
+        {
+            bool lockValue = key == LabelElementKey.Date || key == LabelElementKey.Time;
+            row.Cells[ColValue].ReadOnly = lockValue;
+            row.Cells[ColValue].Style.BackColor = lockValue ? Color.Gainsboro : dataGridView2.DefaultCellStyle.BackColor;
+            row.Cells[ColValue].ToolTipText = lockValue ? "날짜/시간은 {DATE}/{TIME} placeholder로 고정됩니다." : "";
         }
 
         private PrintSettingModel BuildModelFromUi()
@@ -528,9 +623,13 @@ namespace PottingLabelPrinter.Forms
             {
                 if (row.IsNewRow) continue;
 
+                string value = (row.Cells[ColValue].Value ?? "").ToString() ?? "";
+                var key = GetRowKey(row, value);
+                value = NormalizeValueForKey(value, key);
+
                 elements.Add(new LabelElement
                 {
-                    Key = ReadElementKey(row),
+                    Key = key,
                     No = elements.Count + 1,
 
                     ShowPreview = ReadBool(row.Cells[ColShowPreview].Value, true),
@@ -542,9 +641,7 @@ namespace PottingLabelPrinter.Forms
                     FontSizeMm = ReadDecimal(row.Cells[ColFont].Value, 2.6m),
                     ScaleX = ReadDecimal(row.Cells[ColScaleX].Value, 1m),
                     ScaleY = ReadDecimal(row.Cells[ColScaleY].Value, 1m),
-                    Value = NormalizeValueByKey(
-                        ReadElementKey(row),
-                        (row.Cells[ColValue].Value ?? "").ToString() ?? ""),
+                    Value = value,
                     Type = row.Cells[ColType].Value is LabelElementType type ? type : LabelElementType.Text
                 });
             }

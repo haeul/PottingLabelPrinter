@@ -90,7 +90,7 @@ namespace PottingLabelPrinter.Models
                     },
                     new LabelElement
                     {
-                        Key = LabelElementKey.TrayNo,
+                        Key = LabelElementKey.TrayNo,                       
                         No = 2,
                         Type = LabelElementType.Text,
                         ShowPreview = true,
@@ -120,7 +120,7 @@ namespace PottingLabelPrinter.Models
                     },
                     new LabelElement
                     {
-                        Key = LabelElementKey.Date,
+                        Key = LabelElementKey.Time,
                         No = 4,
                         Type = LabelElementType.Text,
                         ShowPreview = true,
