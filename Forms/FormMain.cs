@@ -58,6 +58,9 @@ namespace PottingLabelPrinter
         private const int ReconnectTickMs = 1000;
         private const int FailThresholdToReconnect = 3;
 
+        private readonly TimeSpan _autoPrintMinInterval = TimeSpan.FromMilliseconds(300);
+        private DateTime _lastAutoPrintTriggeredAt = DateTime.MinValue;
+
         /// <summary>
         /// IN2 상태일 때만 txtTrayBarcode backgroundcolor = white
         /// </summary>
@@ -269,6 +272,11 @@ namespace PottingLabelPrinter
         // =========================
         private void Polling_PottingDoneDetected(object? sender, PottingDoneDetectedEventArgs e)
         {
+            var now = DateTime.Now;
+            if (now - _lastAutoPrintTriggeredAt < _autoPrintMinInterval)
+                return;
+
+            _lastAutoPrintTriggeredAt = now;
             PrintSingleAuto();
         }
 
@@ -314,15 +322,15 @@ namespace PottingLabelPrinter
             // lblTotal이 이미 있다면
             lblTotal.Click += (_, __) =>
             {
-                int current = LabelSequenceState.GetCurrentNo();
+                int current = AutoLabelSequenceState.GetCurrentNo();
                 using (var f = new FormRunStartNo(current))
                 {
                     if (f.ShowDialog(this) == DialogResult.OK)
                     {
-                        LabelSequenceState.SetCurrentNo(f.SelectedNo);
+                        AutoLabelSequenceState.SetCurrentNo(f.SelectedNo);
 
                         // 선택: 라벨 텍스트에 반영
-                        // lblTotal.Text = $"Total: ... (NextNo={LabelSequenceState.GetCurrentNo()})";
+                        // lblTotal.Text = $"Total: ... (NextNo={AutoLabelSequenceState.GetCurrentNo()})";
                     }
                 }
             };
@@ -469,11 +477,10 @@ namespace PottingLabelPrinter
 
             var now = DateTime.Now;
             var nowText = now.ToString("yyyy-MM-dd HH:mm:ss");
-            int currentSeq = LabelSequenceState.GetCurrentNo();
+            int currentSeq = AutoLabelSequenceState.GetCurrentNo();
             var payload = BuildTrayBarcodeText(now, currentSeq);
 
-            var result = TryPrintPayload(payload);
-
+            var result = TryPrintPayload(payload, currentSeq);
             // 요구사항: 최신 로그를 “맨 위”에 제한 없이 계속 쌓기
             dataGridView1.Rows.Insert(0, false, nowText, payload, result);
 
@@ -485,8 +492,7 @@ namespace PottingLabelPrinter
             if (string.Equals(result, "OK", StringComparison.OrdinalIgnoreCase))
             {
                 _okCount++;
-                LabelSequenceState.SetCurrentNo(currentSeq + 1);
-                _traySeq = currentSeq + 1;
+                AutoLabelSequenceState.SetCurrentNo(currentSeq + 1); _traySeq = currentSeq + 1;
                 txtTrayBarcode.Text = payload;
             }
             else
@@ -534,7 +540,7 @@ namespace PottingLabelPrinter
             }
         }
 
-        private string TryPrintPayload(string payload)
+        private string TryPrintPayload(string payload, int autoSequenceNo)
         {
             try
             {
@@ -549,7 +555,7 @@ namespace PottingLabelPrinter
                     return "NG";
                 }
 
-                var zpl = BuildZplForPayload(payload);
+                var zpl = BuildZplForPayload(payload, autoSequenceNo, quantityOverride: 1);
                 bool ok = RawPrinter.SendRawToPrinter(printerName, zpl);
                 return ok ? "OK" : "NG";
             }
@@ -600,8 +606,7 @@ namespace PottingLabelPrinter
 
             _traySeqDate = DateTime.Today;
             _traySeq = 1;
-            LabelSequenceState.SetCurrentNo(1);
-
+            AutoLabelSequenceState.SetCurrentNo(1);
             txtTrayBarcode.Text = "-";
             ClearAllSelections();
         }
@@ -865,9 +870,18 @@ namespace PottingLabelPrinter
             e.Graphics.DrawRectangle(pen, r);
         }
 
-        private string BuildZplForPayload(string payload)
+        private string BuildZplForPayload(string payload, int? startNoOverride = null, int? quantityOverride = null)
         {
             var model = PrintSettingStorage.Load();
+
+            if (startNoOverride.HasValue)
+                model.Print.StartNo = startNoOverride.Value;
+
+            if (quantityOverride.HasValue)
+                model.Print.Quantity = quantityOverride.Value;
+
+            // ?  startNoOverride   ?,
+            //  (?)  ? ?.
             var resolved = LabelValueResolver.ApplyPlaceholders(model, payload, model.Print.StartNo, DateTime.Now, resolveNo: false);
             var zpl = LabelZplBuilder.Build(resolved, DefaultDpi);
             ZplDebugLogger.Dump("form-main", payload, zpl);

@@ -108,7 +108,7 @@ namespace PottingLabelPrinter.Forms
 
             // Grid 편집 중이면 커밋 먼저
             CommitGridEdits();
-
+            // 수동 출력 전용: 시작 번호/수량은 여기서만 사용하고 자동 출력 시퀀스에는 영향 없음
             var model = BuildModelFromUi();
             var samplePayload = BuildSamplePayload();
             model = LabelValueResolver.ApplyPlaceholders(model, samplePayload, model.Print.StartNo, DateTime.Now, resolveNo: false);
