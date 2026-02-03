@@ -360,19 +360,23 @@ namespace PottingLabelPrinter.Forms
             if (dataGridView2.Columns[e.ColumnIndex].Name == ColValue)
             {
                 var row = dataGridView2.Rows[e.RowIndex];
-                row.Tag = ReadElementKey(row);
-                if (row.Tag is LabelElementKey key)
+                var currentValue = (row.Cells[ColValue].Value ?? "").ToString() ?? "";
+                var inferredKey = InferKeyFromValue(currentValue);
+                var key = inferredKey != default
+                    ? inferredKey
+                    : (row.Tag is LabelElementKey existing ? existing : default);
+
+                if (key != default)
                 {
-                    var currentValue = (row.Cells[ColValue].Value ?? "").ToString() ?? "";
                     var normalized = NormalizeValueByKey(key, currentValue);
                     if (!string.Equals(currentValue, normalized, StringComparison.Ordinal))
                         row.Cells[ColValue].Value = normalized;
                 }
+                row.Tag = key;
                 ApplyValueEditPolicy(row);
             }
             RefreshPreview();
         }
-
         private void DataGridView2_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
         {
             if (_isLoading) return;
@@ -758,7 +762,7 @@ namespace PottingLabelPrinter.Forms
             if (row.Cells[ColValue] is not DataGridViewCell valueCell)
                 return;
 
-            var key = ReadElementKey(row);
+            var key = GetRowKey(row, row.Cells[ColValue].Value?.ToString() ?? string.Empty);
             bool lockValue = key == LabelElementKey.Date || key == LabelElementKey.Time;
             valueCell.ReadOnly = lockValue;
 

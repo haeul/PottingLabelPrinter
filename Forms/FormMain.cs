@@ -44,6 +44,9 @@ namespace PottingLabelPrinter
         private DateTime _traySeqDate = DateTime.MinValue;
         private int _traySeq = 1;
 
+        private readonly Dictionary<int, string> _trayResults = new Dictionary<int, string>();
+        private int _maxTraySeq = 0;
+
         // Grid 헤더 클릭으로 전체 선택 토글할 때 쓰는 상태값
         private bool _selectAllChecked = false;
 
@@ -360,7 +363,7 @@ namespace PottingLabelPrinter
         }
         private void InitTraySequence()
         {
-            _traySeqDate = DateTime.Today;
+            _traySeqDate = GetProductionDate(DateTime.Now);
             _traySeq = 1;
 
             try { txtTrayBarcode.ReadOnly = true; } catch { }
@@ -370,11 +373,9 @@ namespace PottingLabelPrinter
 
         private void EnsureTraySeqForToday()
         {
-            if (_traySeqDate.Date != DateTime.Today)
-            {
-                _traySeqDate = DateTime.Today;
-                _traySeq = 1;
-            }
+            var productionDate = GetProductionDate(DateTime.Now);
+            if (_traySeqDate.Date != productionDate.Date)
+                ResetProductionDayState(productionDate, clearGrid: true);
         }
 
         private string BuildTrayBarcodeText(DateTime now, int traySeq)
@@ -487,20 +488,15 @@ namespace PottingLabelPrinter
             if (TryGetDailySaveDirectory(now, out var dailyDir))
                 SavePrintLogCsv(dailyDir, nowText, payload, result);
 
-            _totalCount++;
+            UpdateTrayResult(currentSeq, result);
 
             if (string.Equals(result, "OK", StringComparison.OrdinalIgnoreCase))
             {
-                _okCount++;
                 AutoLabelSequenceState.SetCurrentNo(currentSeq + 1); _traySeq = currentSeq + 1;
                 txtTrayBarcode.Text = payload;
             }
-            else
-            {
-                _ngCount++;
-            }
 
-            UpdateCountLabels();
+            UpdateCountsFromTrayResults();
         }
 
         private void TryPrintPayload_LabelOnly(string payload)
@@ -604,9 +600,10 @@ namespace PottingLabelPrinter
             if (_polling != null)
                 _polling.ResetLatch();
 
-            _traySeqDate = DateTime.Today;
-            _traySeq = 1;
+            _traySeqDate = GetProductionDate(DateTime.Now); _traySeq = 1;
             AutoLabelSequenceState.SetCurrentNo(1);
+            _trayResults.Clear();
+            _maxTraySeq = 0;
             txtTrayBarcode.Text = "-";
             ClearAllSelections();
         }
@@ -632,8 +629,8 @@ namespace PottingLabelPrinter
                 if (!Directory.Exists(basePath))
                     Directory.CreateDirectory(basePath);
 
-                var dateFolder = now.ToString("yyyyMMdd");
-                dailyDir = Path.Combine(basePath, dateFolder);
+                var productionDate = GetProductionDate(now);
+                var dateFolder = productionDate.ToString("yyyyMMdd"); dailyDir = Path.Combine(basePath, dateFolder);
 
                 if (!Directory.Exists(dailyDir))
                     Directory.CreateDirectory(dailyDir);
@@ -691,26 +688,46 @@ namespace PottingLabelPrinter
                 if (string.IsNullOrWhiteSpace(basePath))
                     return;
 
-                var todayFolder = DateTime.Today.ToString("yyyyMMdd");
+                var productionDate = GetProductionDate(DateTime.Now);
+                var todayFolder = productionDate.ToString("yyyyMMdd");
                 var dailyDir = Path.Combine(basePath, todayFolder);
                 var csvPath = Path.Combine(dailyDir, "print_log.csv");
 
                 if (!File.Exists(csvPath))
+                {
+                    ResetProductionDayState(productionDate, clearGrid: false);
                     return;
+                }
 
                 var lines = File.ReadAllLines(csvPath, Encoding.UTF8);
                 if (lines.Length <= 1)
+                {
+                    ResetProductionDayState(productionDate, clearGrid: false);
                     return;
+                }
 
                 dataGridView1.Rows.Clear();
 
-                _totalCount = 0;
-                _okCount = 0;
-                _ngCount = 0;
+                _trayResults.Clear();
+                _maxTraySeq = 0;
 
-                int lastTraySeq = 0;
+                foreach (var line in lines.Skip(1))
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
 
-                // 최신이 위로 오게: 파일(오래된→최신) 저장이므로 역순으로 복원
+                    var cols = ParseCsvLine(line);
+                    if (cols.Length < 3)
+                        continue;
+
+                    var tray = cols[1];
+                    var result = cols[2];
+
+                    if (TryParseTraySeq(tray, out var seq))
+                        UpdateTrayResult(seq, result);
+                }
+
+                // Keep grid newest-first for log view
                 foreach (var line in lines.Skip(1).Reverse())
                 {
                     if (string.IsNullOrWhiteSpace(line))
@@ -724,40 +741,82 @@ namespace PottingLabelPrinter
                     var tray = cols[1];
                     var result = cols[2];
 
-                    // 최신이 먼저 들어오고 아래로 쌓임
                     dataGridView1.Rows.Add(false, dateTime, tray, result);
-
-                    _totalCount++;
-
-                    if (result.Equals("OK", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _okCount++;
-
-                        if (tray.StartsWith("TRAY") &&
-                            tray.Length >= 8 &&
-                            int.TryParse(tray.Substring(4, 4), out var seq))
-                        {
-                            lastTraySeq = Math.Max(lastTraySeq, seq);
-                        }
-                    }
-                    else
-                    {
-                        _ngCount++;
-                    }
                 }
 
-                UpdateCountLabels();
+                UpdateCountsFromTrayResults();
 
-                _traySeqDate = DateTime.Today;
-                _traySeq = lastTraySeq + 1;
+                _traySeqDate = productionDate;
+                _traySeq = _maxTraySeq + 1;
+                AutoLabelSequenceState.SetCurrentNo(_traySeq);
 
-                if (lastTraySeq > 0)
-                    txtTrayBarcode.Text = $"TRAY{lastTraySeq:0000}";
+                if (_maxTraySeq > 0)
+                    txtTrayBarcode.Text = $"TRAY{_maxTraySeq:0000}";
             }
             catch
             {
-                // 복원 실패는 치명적이지 않으므로 조용히 무시
+                // Ignore restore errors
             }
+        }
+
+        private static DateTime GetProductionDate(DateTime now)
+        {
+            var boundary = now.Date.AddHours(7);
+            return now < boundary ? now.Date.AddDays(-1) : now.Date;
+        }
+
+        private void ResetProductionDayState(DateTime productionDate, bool clearGrid)
+        {
+            _traySeqDate = productionDate;
+            _traySeq = 1;
+            AutoLabelSequenceState.SetCurrentNo(1);
+
+            _trayResults.Clear();
+            _maxTraySeq = 0;
+            _totalCount = 0;
+            _okCount = 0;
+            _ngCount = 0;
+            UpdateCountLabels();
+
+            if (clearGrid)
+            {
+                dataGridView1.Rows.Clear();
+                ClearAllSelections();
+            }
+
+            txtTrayBarcode.Text = "-";
+        }
+
+        private static bool TryParseTraySeq(string trayBarcode, out int seq)
+        {
+            seq = 0;
+            if (!trayBarcode.StartsWith("TRAY", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (trayBarcode.Length < 8)
+                return false;
+
+            return int.TryParse(trayBarcode.Substring(4, 4), out seq);
+        }
+
+        private void UpdateTrayResult(int traySeq, string result)
+        {
+            if (traySeq <= 0)
+                return;
+
+            _trayResults[traySeq] = result;
+            if (traySeq > _maxTraySeq)
+                _maxTraySeq = traySeq;
+        }
+
+        private void UpdateCountsFromTrayResults()
+        {
+            _totalCount = _maxTraySeq;
+            _okCount = _trayResults.Values.Count(value =>
+                string.Equals(value, "OK", StringComparison.OrdinalIgnoreCase));
+            _ngCount = _trayResults.Values.Count(value =>
+                !string.Equals(value, "OK", StringComparison.OrdinalIgnoreCase));
+            UpdateCountLabels();
         }
 
         private static string[] ParseCsvLine(string line)
