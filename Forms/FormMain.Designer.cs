@@ -75,6 +75,9 @@
             colDateTime = new DataGridViewTextBoxColumn();
             colTrayBarcode = new DataGridViewTextBoxColumn();
             colResult = new DataGridViewTextBoxColumn();
+            tlpCommStatus = new TableLayoutPanel();
+            lblPortConnectionStatus = new Label();
+            lblDoneSignalStatus = new Label();
             pnlHeader.SuspendLayout();
             tlpSetting.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)ImgInfac).BeginInit();
@@ -84,6 +87,7 @@
             pnlBacrground.SuspendLayout();
             tlpbutton.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            tlpCommStatus.SuspendLayout();
             SuspendLayout();
             // 
             // pnlHeader
@@ -518,6 +522,7 @@
             pnlBacrground.Controls.Add(tlpCount);
             pnlBacrground.Controls.Add(panel3);
             pnlBacrground.Controls.Add(dataGridView1);
+            pnlBacrground.Controls.Add(tlpCommStatus);
             pnlBacrground.Location = new Point(6, 6);
             pnlBacrground.Name = "pnlBacrground";
             pnlBacrground.Size = new Size(972, 952);
@@ -589,7 +594,7 @@
             dataGridView1.Location = new Point(10, 343);
             dataGridView1.Name = "dataGridView1";
             dataGridView1.RowHeadersWidth = 62;
-            dataGridView1.Size = new Size(952, 597);
+            dataGridView1.Size = new Size(952, 560);
             dataGridView1.TabIndex = 0;
             // 
             // CheckBodx
@@ -626,6 +631,48 @@
             colResult.MinimumWidth = 8;
             colResult.Name = "colResult";
             // 
+            // tlpCommStatus
+            // 
+            tlpCommStatus.BackColor = SystemColors.Control;
+            tlpCommStatus.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
+            tlpCommStatus.ColumnCount = 2;
+            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tlpCommStatus.Controls.Add(lblPortConnectionStatus, 0, 0);
+            tlpCommStatus.Controls.Add(lblDoneSignalStatus, 1, 0);
+            tlpCommStatus.Location = new Point(10, 909);
+            tlpCommStatus.Name = "tlpCommStatus";
+            tlpCommStatus.RowCount = 1;
+            tlpCommStatus.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpCommStatus.Size = new Size(952, 36);
+            tlpCommStatus.TabIndex = 8;
+            // 
+            // lblPortConnectionStatus
+            // 
+            lblPortConnectionStatus.Dock = DockStyle.Fill;
+            lblPortConnectionStatus.Font = new Font("Segoe UI Semibold", 12.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblPortConnectionStatus.ForeColor = Color.OrangeRed;
+            lblPortConnectionStatus.Location = new Point(1, 1);
+            lblPortConnectionStatus.Margin = new Padding(0);
+            lblPortConnectionStatus.Name = "lblPortConnectionStatus";
+            lblPortConnectionStatus.Size = new Size(474, 34);
+            lblPortConnectionStatus.TabIndex = 0;
+            lblPortConnectionStatus.Text = "미설정 포트 연결";
+            lblPortConnectionStatus.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblDoneSignalStatus
+            // 
+            lblDoneSignalStatus.Dock = DockStyle.Fill;
+            lblDoneSignalStatus.Font = new Font("Segoe UI Semibold", 12.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblDoneSignalStatus.ForeColor = Color.Gray;
+            lblDoneSignalStatus.Location = new Point(476, 1);
+            lblDoneSignalStatus.Margin = new Padding(0);
+            lblDoneSignalStatus.Name = "lblDoneSignalStatus";
+            lblDoneSignalStatus.Size = new Size(475, 34);
+            lblDoneSignalStatus.TabIndex = 1;
+            lblDoneSignalStatus.Text = "토출 완료 신호 수신";
+            lblDoneSignalStatus.TextAlign = ContentAlignment.MiddleCenter;
+            // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 17F);
@@ -648,6 +695,7 @@
             pnlBacrground.ResumeLayout(false);
             tlpbutton.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            tlpCommStatus.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -694,5 +742,10 @@
         private DataGridViewTextBoxColumn colTrayBarcode;
         private DataGridViewTextBoxColumn colResult;
         private Button btnPrintSetting;
+
+        // ✅ 상태바 구성
+        private TableLayoutPanel tlpCommStatus;
+        private Label lblPortConnectionStatus;
+        private Label lblDoneSignalStatus;
     }
 }

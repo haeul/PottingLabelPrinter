@@ -69,15 +69,14 @@ namespace PottingLabelPrinter
         /// </summary>
         private readonly System.Windows.Forms.Timer _uiStateTimer = new System.Windows.Forms.Timer();
 
-        // (변경) 블링크가 아니라 통신 상태 색상 표시용
-        private readonly UiCommStatusIndicator _commStatusIndicator;
+        // 상태 라벨 UI 갱신 캐시 (불필요한 UI 업데이트 방지)
+        private string _lastPortStatusText = string.Empty;
+        private Color _lastPortStatusColor = Color.Empty;
+        private bool? _lastDoneSignalState = null;
 
         public FormMain()
         {
             InitializeComponent();
-
-            // (변경) 텍스트 ForeColor 상태 표시용 (점멸 없음)
-            _commStatusIndicator = new UiCommStatusIndicator(lblTrayBarcodePrint, 120);
 
             EnsureDefaultSavePath();
 
@@ -110,8 +109,6 @@ namespace PottingLabelPrinter
             // 2) Polling 서비스 준비 + 종료까지 유지
             _polling = new ModbusPollingService(_modbusSession, _doneSpec);
             _polling.PottingDoneDetected += Polling_PottingDoneDetected;
-            _polling.PollingTxSucceeded += Polling_TxSucceeded;
-            _polling.PollingErrorDetected += Polling_ErrorDetected;
 
             // 연결 여부와 관계 없이 Start는 켜둬도 됨 (Tick에서 IsOpen 체크로 안전하게 skip)
             _polling.Start();
@@ -119,7 +116,7 @@ namespace PottingLabelPrinter
             // 3) 오늘 로그 복원 (복원도 최신이 위로 보이도록 처리)
             RestoreTodayStateIfExists();
 
-            // 4) UI 상태 타이머 (IN2에 따라 txtTrayBarcode 배경 표시) - 종료까지 유지
+            // 4) UI 상태 타이머 (IN2에 따라 txtTrayBarcode 배경 표시 + 상태라벨 갱신) - 종료까지 유지
             _uiStateTimer.Interval = 100;
             _uiStateTimer.Tick += UiStateTimer_Tick;
             _uiStateTimer.Start();
@@ -186,17 +183,45 @@ namespace PottingLabelPrinter
         }
 
         // =========================
-        // UI 상태 타이머: IN2 상태면 흰색
+        // UI 상태 타이머: IN2 상태면 흰색 + 상태바 갱신
         // =========================
         private void UiStateTimer_Tick(object? sender, EventArgs e)
         {
-            if (_polling == null)
-                return;
+            var isDoneSignalOn = _polling?.LastIn2 ?? false;
 
-            if (_polling.LastIn2)
+            if (isDoneSignalOn)
                 txtTrayBarcode.BackColor = Color.White;
             else
                 txtTrayBarcode.BackColor = SystemColors.Control;
+
+            UpdateCommStatusLabels(isDoneSignalOn);
+        }
+
+        private void UpdateCommStatusLabels(bool isDoneSignalOn)
+        {
+            // 1) 포트 연결 상태
+            var port = (Properties.Settings.Default.ComBoardPort ?? "").Trim();
+            var portText = string.IsNullOrWhiteSpace(port) ? "미설정" : port;
+            var portLabelText = $"{portText} 포트 연결";
+
+            // 연결 판단은 세션 IsOpen 기준(기존 스펙 그대로)
+            var portColor = _modbusSession.IsOpen ? Color.ForestGreen : Color.OrangeRed;
+
+            if (!string.Equals(_lastPortStatusText, portLabelText, StringComparison.Ordinal)
+                || _lastPortStatusColor != portColor)
+            {
+                lblPortConnectionStatus.Text = portLabelText;
+                lblPortConnectionStatus.ForeColor = portColor;
+                _lastPortStatusText = portLabelText;
+                _lastPortStatusColor = portColor;
+            }
+
+            // 2) 완료 신호 수신 상태(IN2)
+            if (_lastDoneSignalState == null || _lastDoneSignalState.Value != isDoneSignalOn)
+            {
+                lblDoneSignalStatus.ForeColor = isDoneSignalOn ? Color.ForestGreen : Color.Gray;
+                _lastDoneSignalState = isDoneSignalOn;
+            }
         }
 
         // =========================
@@ -250,13 +275,10 @@ namespace PottingLabelPrinter
             if (_polling != null)
             {
                 _polling.PottingDoneDetected -= Polling_PottingDoneDetected;
-                _polling.PollingTxSucceeded -= Polling_TxSucceeded;
-                _polling.PollingErrorDetected -= Polling_ErrorDetected;
                 _polling.Dispose();
                 _polling = null;
             }
 
-            _commStatusIndicator.Dispose();
             _modbusSession.Dispose();
         }
 
@@ -285,27 +307,12 @@ namespace PottingLabelPrinter
         // =========================
         private void Polling_PottingDoneDetected(object? sender, PottingDoneDetectedEventArgs e)
         {
-            // (변경) 초록색 표시 (점멸 없음)
-            _commStatusIndicator.SetDone();
-
             var now = DateTime.Now;
             if (now - _lastAutoPrintTriggeredAt < _autoPrintMinInterval)
                 return;
 
             _lastAutoPrintTriggeredAt = now;
             PrintSingleAuto();
-        }
-
-        private void Polling_TxSucceeded(object? sender, EventArgs e)
-        {
-            // (변경) 파란색 표시 (점멸 없음)
-            _commStatusIndicator.SetTx();
-        }
-
-        private void Polling_ErrorDetected(object? sender, ModbusCommErrorEventArgs e)
-        {
-            // (변경) 빨간색 표시 (점멸 없음)
-            _commStatusIndicator.SetError();
         }
 
         // =========================
@@ -402,65 +409,6 @@ namespace PottingLabelPrinter
             var productionDate = GetProductionDate(DateTime.Now);
             if (_traySeqDate.Date != productionDate.Date)
                 ResetProductionDayState(productionDate, clearGrid: true);
-        }
-
-        // =========================
-        // 통신 상태 표시: 라벨 텍스트 ForeColor만 변경
-        // =========================
-        private sealed class UiCommStatusIndicator : IDisposable
-        {
-            private readonly Label _label;
-            private readonly Color _originalForeColor;
-
-            private readonly int _minIntervalMs;
-            private DateTime _lastSetAt = DateTime.MinValue;
-            private Color _lastColor = Color.Empty;
-
-            public UiCommStatusIndicator(Label label, int minIntervalMs)
-            {
-                _label = label ?? throw new ArgumentNullException(nameof(label));
-                _originalForeColor = _label.ForeColor;
-                _minIntervalMs = Math.Max(50, minIntervalMs);
-            }
-
-            public void SetTx()
-            {
-                Set(Color.DodgerBlue);
-            }
-
-            public void SetDone()
-            {
-                Set(Color.LimeGreen);
-            }
-
-            public void SetError()
-            {
-                Set(Color.OrangeRed);
-            }
-
-            private void Set(Color color)
-            {
-                var now = DateTime.Now;
-                if (color == _lastColor && (now - _lastSetAt).TotalMilliseconds < _minIntervalMs)
-                    return;
-
-                _lastSetAt = now;
-                _lastColor = color;
-
-                _label.ForeColor = color;
-            }
-
-            public void ResetToDefault()
-            {
-                _label.ForeColor = _originalForeColor;
-                _lastColor = Color.Empty;
-                _lastSetAt = DateTime.MinValue;
-            }
-
-            public void Dispose()
-            {
-                // Timer/리소스 없음
-            }
         }
 
         private string BuildTrayBarcodeText(DateTime now, int traySeq)
@@ -629,7 +577,7 @@ namespace PottingLabelPrinter
                 if (string.IsNullOrWhiteSpace(printerName))
                 {
                     MessageBox.Show(
-                        "프린터 이름이 설정되지 않았습니다.\n(Setting에서 Windows에 설치된 프린터를 선택해 주세요.)",
+                        "프린터 이름이 설정되지 않았습니다.\n(Setting에서 Windows에 설치된 프린터를 선택 주세요.)",
                         "알림",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
