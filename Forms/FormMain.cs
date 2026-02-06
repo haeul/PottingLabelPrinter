@@ -3,6 +3,7 @@ using PottingLabelPrinter.Models;
 using PottingLabelPrinter.Printer;
 using PottingLabelPrinter.Services;
 using PottingLabelPrinter.Logic;
+using PottingLabelPrinter.Utils;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -84,6 +85,7 @@ namespace PottingLabelPrinter
 
             btnPrint.Click += BtnPrint_Click;
             btnReset.Click += BtnReset_Click;
+            btnTestDone.Click += BtnTestDone_Click;
 
             Load += FormMain_Load;
             FormClosed += FormMain_FormClosed;
@@ -275,12 +277,45 @@ namespace PottingLabelPrinter
         // =========================
         private void Polling_PottingDoneDetected(object? sender, PottingDoneDetectedEventArgs e)
         {
+            OnPottingDone("MODBUS");
+        }
+
+        // ===== TEST/DIAGNOSTICS BEGIN =====
+        private void BtnTestDone_Click(object sender, EventArgs e)
+        {
+            var now = DateTime.Now;
+            TestDiagnostics.Instance.RecordSyntheticDone(now);
+            System.Diagnostics.Debug.WriteLine($"[TEST][DONE] TEST trigger at {now:HH:mm:ss.fff}");
+
+            OnPottingDone("TEST");
+
+            MessageBox.Show(
+                TestDiagnostics.Instance.GetSnapshotText(),
+                "TEST/DIAGNOSTICS",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        // ===== TEST/DIAGNOSTICS END =====
+
+        private void OnPottingDone(string source)
+        {
             var now = DateTime.Now;
             if (now - _lastAutoPrintTriggeredAt < _autoPrintMinInterval)
                 return;
 
             _lastAutoPrintTriggeredAt = now;
-            PrintSingleAuto();
+
+            // ===== TEST/DIAGNOSTICS BEGIN =====
+            TestDiagnostics.Instance.LogAutoPrintStart(source, now);
+            try
+            {
+                PrintSingleAuto();
+            }
+            finally
+            {
+                TestDiagnostics.Instance.LogAutoPrintEnd(source, DateTime.Now);
+            }
+            // ===== TEST/DIAGNOSTICS END =====
         }
 
         // =========================

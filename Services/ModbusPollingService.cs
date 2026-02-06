@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using System.Collections.Generic;
 using PottingLabelPrinter.Models;
 using PottingLabelPrinter.Utils;
 using PottingLabelPrinter.Modbus;
@@ -19,6 +20,7 @@ namespace PottingLabelPrinter.Services
         private readonly EdgeLatch _latch = new EdgeLatch();
         private readonly System.Windows.Forms.Timer _timer = new System.Windows.Forms.Timer();
         private bool _ticking;
+        private readonly Dictionary<byte, bool> _lastDoneBySlave = new Dictionary<byte, bool>();
 
         public event EventHandler<PottingDoneDetectedEventArgs>? PottingDoneDetected;
 
@@ -64,13 +66,18 @@ namespace PottingLabelPrinter.Services
 
             try
             {
+                // ===== TEST/DIAGNOSTICS BEGIN =====
+                var now = DateTime.Now;
+                TestDiagnostics.Instance.RecordPollingTick(now);
+                // ===== TEST/DIAGNOSTICS END =====
+
                 if (!_session.IsOpen)
                 {
                     LastCommStatus = "PORT CLOSE";
                     LastCommAt = DateTime.Now;
                     return;
                 }
-                    
+
                 // 현재 요구사항은 FC=0x02 고정
                 if (_spec.Function != FunctionCode.ReadDiscreteInputs)
                     return;
@@ -85,6 +92,9 @@ namespace PottingLabelPrinter.Services
                         LastCommStatus = $"FAIL (SID={slave})";
                         LastCommError = err ?? "";
                         LastCommAt = DateTime.Now;
+                        // ===== TEST/DIAGNOSTICS BEGIN =====
+                        TestDiagnostics.Instance.LogModbusException(slave, LastCommError, DateTime.Now);
+                        // ===== TEST/DIAGNOSTICS END =====
                         continue;
                     }
 
@@ -115,6 +125,21 @@ namespace PottingLabelPrinter.Services
 
                     // 완료 트리거는 IN2
                     bool nowDone = in2;
+
+                    // ===== TEST/DIAGNOSTICS BEGIN =====
+                    TestDiagnostics.Instance.RecordModbusRead(b0, nowDone, DateTime.Now);
+                    if (_lastDoneBySlave.TryGetValue(slave, out var prevDone))
+                    {
+                        if (prevDone != nowDone)
+                            TestDiagnostics.Instance.LogDoneTransition(slave, prevDone, nowDone, DateTime.Now);
+                    }
+                    else
+                    {
+                        TestDiagnostics.Instance.RecordDoneTransition(DateTime.Now, nowDone);
+                    }
+
+                    _lastDoneBySlave[slave] = nowDone;
+                    // ===== TEST/DIAGNOSTICS END =====
 
                     if (_latch.Rise(slave, nowDone))
                     {

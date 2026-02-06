@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO.Ports;
 using PottingLabelPrinter.Modbus;
+using PottingLabelPrinter.Utils;
 
 namespace PottingLabelPrinter.Services
 {
@@ -91,6 +92,9 @@ namespace PottingLabelPrinter.Services
             }
             catch (Exception ex)
             {
+                // ===== TEST/DIAGNOSTICS BEGIN =====
+                TestDiagnostics.Instance.LogModbusException(slave, ex.Message, DateTime.Now);
+                // ===== TEST/DIAGNOSTICS END =====
                 error = ex.Message;
                 return false;
             }
@@ -116,6 +120,9 @@ namespace PottingLabelPrinter.Services
             }
             catch (Exception ex)
             {
+                // ===== TEST/DIAGNOSTICS BEGIN =====
+                TestDiagnostics.Instance.LogModbusException(slave, ex.Message, DateTime.Now);
+                // ===== TEST/DIAGNOSTICS END =====
                 error = ex.Message;
                 return false;
             }

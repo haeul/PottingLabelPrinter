@@ -69,6 +69,7 @@
             pnlBacrground = new Panel();
             tlpbutton = new TableLayoutPanel();
             btnReset = new Button();
+            btnTestDone = new Button();
             btnPrint = new Button();
             dataGridView1 = new DataGridView();
             CheckBodx = new DataGridViewCheckBoxColumn();
@@ -527,10 +528,12 @@
             // tlpbutton
             // 
             tlpbutton.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
-            tlpbutton.ColumnCount = 2;
-            tlpbutton.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tlpbutton.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tlpbutton.Controls.Add(btnReset, 1, 0);
+            tlpbutton.ColumnCount = 3;
+            tlpbutton.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tlpbutton.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tlpbutton.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            tlpbutton.Controls.Add(btnReset, 2, 0);
+            tlpbutton.Controls.Add(btnTestDone, 1, 0);
             tlpbutton.Controls.Add(btnPrint, 0, 0);
             tlpbutton.Location = new Point(492, 207);
             tlpbutton.Name = "tlpbutton";
@@ -544,12 +547,23 @@
             // 
             btnReset.BackColor = SystemColors.Control;
             btnReset.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnReset.Location = new Point(238, 4);
+            btnReset.Location = new Point(316, 4);
             btnReset.Name = "btnReset";
-            btnReset.Size = new Size(228, 45);
+            btnReset.Size = new Size(150, 45);
             btnReset.TabIndex = 1;
             btnReset.Text = "Reset";
             btnReset.UseVisualStyleBackColor = false;
+            // 
+            // btnTestDone
+            // 
+            btnTestDone.BackColor = SystemColors.Control;
+            btnTestDone.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            btnTestDone.Location = new Point(160, 4);
+            btnTestDone.Name = "btnTestDone";
+            btnTestDone.Size = new Size(150, 45);
+            btnTestDone.TabIndex = 2;
+            btnTestDone.Text = "TEST DONE";
+            btnTestDone.UseVisualStyleBackColor = false;
             // 
             // btnPrint
             // 
@@ -557,7 +571,7 @@
             btnPrint.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnPrint.Location = new Point(4, 4);
             btnPrint.Name = "btnPrint";
-            btnPrint.Size = new Size(227, 45);
+            btnPrint.Size = new Size(150, 45);
             btnPrint.TabIndex = 0;
             btnPrint.Text = "Print";
             btnPrint.UseVisualStyleBackColor = false;
@@ -687,6 +701,7 @@
         private DataGridView dataGridView1;
         private TableLayoutPanel tlpbutton;
         private Button btnReset;
+        private Button btnTestDone;
         private Button btnPrint;
         private TableLayoutPanel tlpSetting;
         private DataGridViewCheckBoxColumn CheckBodx;
