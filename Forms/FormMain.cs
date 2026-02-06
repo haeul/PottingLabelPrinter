@@ -55,11 +55,15 @@ namespace PottingLabelPrinter
         /// </summary>
         private FormDoneProbe? _doneProbeForm;
 
-        // ====== (추가) 종료까지 유지되는 “연결 감시/자동 재연결” 타이머 ======
+        // ====== 종료까지 유지되는 “연결 감시/자동 재연결” 타이머 ======
         private readonly System.Windows.Forms.Timer _reconnectTimer = new System.Windows.Forms.Timer();
-        private int _healthFailStreak = 0;
-        private const int ReconnectTickMs = 1000;
-        private const int FailThresholdToReconnect = 3;
+
+        // 5초마다 “연결될 때까지” 재연결 시도
+        private const int ReconnectTickMs = 5000;
+
+        // 폴링 실패 누적 시 즉시 재연결 (필요하면 유지)
+        private int _pollingFailStreak = 0;
+        private const int PollingFailThresholdToReconnect = 3;
 
         private readonly TimeSpan _autoPrintMinInterval = TimeSpan.FromMilliseconds(300);
         private DateTime _lastAutoPrintTriggeredAt = DateTime.MinValue;
@@ -73,6 +77,21 @@ namespace PottingLabelPrinter
         private string _lastPortStatusText = string.Empty;
         private Color _lastPortStatusColor = Color.Empty;
         private bool? _lastDoneSignalState = null;
+
+        // ===== 통신 상태 문구(고정) =====
+        private enum CommUiState
+        {
+            Normal,
+            Bad,
+            ReconnectFail,
+            ReconnectSuccess
+        }
+
+        private CommUiState _commUiState = CommUiState.Bad;
+        private DateTime _commUiStateUntil = DateTime.MinValue;
+
+        private readonly TimeSpan _flashFailDuration = TimeSpan.FromSeconds(1.0);
+        private readonly TimeSpan _flashSuccessDuration = TimeSpan.FromSeconds(1.5);
 
         public FormMain()
         {
@@ -110,6 +129,9 @@ namespace PottingLabelPrinter
             _polling = new ModbusPollingService(_modbusSession, _doneSpec);
             _polling.PottingDoneDetected += Polling_PottingDoneDetected;
 
+            _polling.PollingErrorDetected += Polling_PollingErrorDetected;
+            _polling.PollingTxSucceeded += Polling_PollingTxSucceeded;
+
             // 연결 여부와 관계 없이 Start는 켜둬도 됨 (Tick에서 IsOpen 체크로 안전하게 skip)
             _polling.Start();
 
@@ -121,16 +143,74 @@ namespace PottingLabelPrinter
             _uiStateTimer.Tick += UiStateTimer_Tick;
             _uiStateTimer.Start();
 
-            // 5) (추가) 종료까지 유지되는 자동 재연결/헬스체크 타이머
+            // 5) 종료까지 유지되는 자동 재연결/헬스체크 타이머 (5초마다)
             _reconnectTimer.Interval = ReconnectTickMs;
             _reconnectTimer.Tick += ReconnectTimer_Tick;
             _reconnectTimer.Start();
+
+            // 초기 상태 (열려있지 않으면 Bad로)
+            if (_modbusSession.IsOpen)
+                SetCommUiState(CommUiState.Normal);
+            else
+                SetCommUiState(CommUiState.Bad);
 
             HookRunStartNoUi();
         }
 
         // =========================
-        // (추가) 재연결/헬스체크: 종료까지 반복
+        // 통신 상태 문구 제어 (고정 상태 머신)
+        // =========================
+        private void SetCommUiState(CommUiState state, TimeSpan? hold = null)
+        {
+            _commUiState = state;
+            _commUiStateUntil = hold.HasValue ? DateTime.Now + hold.Value : DateTime.MinValue;
+            UpdateCommHealthLabel();
+        }
+
+        private void UpdateCommHealthLabel()
+        {
+            // TTL 종료 시 자동 복귀
+            if (_commUiStateUntil != DateTime.MinValue && DateTime.Now >= _commUiStateUntil)
+            {
+                if (_commUiState == CommUiState.ReconnectSuccess)
+                    _commUiState = CommUiState.Normal;
+                else if (_commUiState == CommUiState.ReconnectFail)
+                    _commUiState = CommUiState.Bad;
+
+                _commUiStateUntil = DateTime.MinValue;
+            }
+
+            // NOTE: lblCommHealthStatus는 Designer에 추가될 라벨
+            // (지금은 FormMain.cs만 주는 요청이라, Designer에서 라벨 추가하면 그대로 동작)
+            if (lblCommHealthStatus == null)
+                return;
+
+            switch (_commUiState)
+            {
+                case CommUiState.Normal:
+                    lblCommHealthStatus.Text = "통신 연결 상태 정상";
+                    lblCommHealthStatus.ForeColor = Color.ForestGreen;
+                    break;
+
+                case CommUiState.Bad:
+                    lblCommHealthStatus.Text = "통신 연결 상태 불량";
+                    lblCommHealthStatus.ForeColor = Color.OrangeRed;
+                    break;
+
+                case CommUiState.ReconnectFail:
+                    lblCommHealthStatus.Text = "재연결 시도 실패";
+                    lblCommHealthStatus.ForeColor = Color.OrangeRed;
+                    break;
+
+                case CommUiState.ReconnectSuccess:
+                    lblCommHealthStatus.Text = "재연결 성공";
+                    lblCommHealthStatus.ForeColor = Color.ForestGreen;
+                    break;
+            }
+        }
+
+        // =========================
+        // (변경) 재연결/헬스체크: 5초마다, 연결될 때까지 계속
         // =========================
         private void ReconnectTimer_Tick(object? sender, EventArgs e)
         {
@@ -138,34 +218,32 @@ namespace PottingLabelPrinter
             if (string.IsNullOrWhiteSpace(port))
                 return;
 
-            if (!_modbusSession.IsOpen)
+            // 열려있고 헬스체크 OK면 정상 유지
+            if (_modbusSession.IsOpen)
             {
-                TryReconnect(port, "IsOpen=false");
-                return;
+                byte slave = (_doneSpec.Slaves != null && _doneSpec.Slaves.Length > 0) ? _doneSpec.Slaves[0] : (byte)1;
+                ushort addr = _doneSpec.Address;
+
+                if (_modbusSession.TryReadDiscreteInputs(slave, addr, 2, out _, out _))
+                {
+                    SetCommUiState(CommUiState.Normal);
+                    return;
+                }
+
+                // 응답 없으면 Bad 표시 후 재연결 시도
+                SetCommUiState(CommUiState.Bad);
+            }
+            else
+            {
+                SetCommUiState(CommUiState.Bad);
             }
 
-            // 헬스체크: DiscreteInputs 2bit 읽기
-            byte slave = (_doneSpec.Slaves != null && _doneSpec.Slaves.Length > 0) ? _doneSpec.Slaves[0] : (byte)1;
-            ushort addr = _doneSpec.Address;
-            ushort count = 2;
-
-            if (_modbusSession.TryReadDiscreteInputs(slave, addr, count, out _, out _))
-            {
-                _healthFailStreak = 0;
-                return;
-            }
-
-            _healthFailStreak++;
-            if (_healthFailStreak >= FailThresholdToReconnect)
-            {
-                TryReconnect(port, $"HealthFailStreak={_healthFailStreak}");
-            }
+            // 5초마다 재연결 (성공할 때까지 계속)
+            TryReconnect(port, "PeriodicReconnect");
         }
 
         private void TryReconnect(string portName, string reason)
         {
-            _healthFailStreak = 0;
-
             try { _modbusSession.Disconnect(); } catch { }
 
             try
@@ -175,10 +253,14 @@ namespace PottingLabelPrinter
                 // 재연결 직후 오탐 방지
                 if (_polling != null)
                     _polling.ResetLatch();
+
+                // 성공: 잠깐 성공 문구 -> 자동 Normal 복귀
+                SetCommUiState(CommUiState.ReconnectSuccess, _flashSuccessDuration);
             }
             catch
             {
-                // 재연결 실패도 앱은 계속 동작하게 둔다. 다음 Tick에서 재시도
+                // 실패: 잠깐 실패 문구 -> 자동 Bad 복귀
+                SetCommUiState(CommUiState.ReconnectFail, _flashFailDuration);
             }
         }
 
@@ -195,6 +277,7 @@ namespace PottingLabelPrinter
                 txtTrayBarcode.BackColor = SystemColors.Control;
 
             UpdateCommStatusLabels(isDoneSignalOn);
+            UpdateCommHealthLabel();
         }
 
         private void UpdateCommStatusLabels(bool isDoneSignalOn)
@@ -275,6 +358,8 @@ namespace PottingLabelPrinter
             if (_polling != null)
             {
                 _polling.PottingDoneDetected -= Polling_PottingDoneDetected;
+                _polling.PollingErrorDetected -= Polling_PollingErrorDetected;
+                _polling.PollingTxSucceeded -= Polling_PollingTxSucceeded;
                 _polling.Dispose();
                 _polling = null;
             }
@@ -315,6 +400,34 @@ namespace PottingLabelPrinter
             PrintSingleAuto();
         }
 
+        private void Polling_PollingTxSucceeded(object? sender, EventArgs e)
+        {
+            _pollingFailStreak = 0;
+
+            // 폴링 TX가 성공하면 정상 상태로
+            SetCommUiState(CommUiState.Normal);
+        }
+
+        private void Polling_PollingErrorDetected(object? sender, ModbusCommErrorEventArgs e)
+        {
+            _pollingFailStreak++;
+
+            // 통신 관련 에러면 메시지 난사하지 않고 "불량"으로 고정
+            SetCommUiState(CommUiState.Bad);
+
+            // (선택) 폴링 에러가 연속되면 즉시 재연결 트리거
+            if (_pollingFailStreak < PollingFailThresholdToReconnect)
+                return;
+
+            _pollingFailStreak = 0;
+
+            var port = (Properties.Settings.Default.ComBoardPort ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(port))
+                return;
+
+            TryReconnect(port, "PollingFail");
+        }
+
         // =========================
         // Setting 버튼: 포트 변경 시 예외적으로 재연결
         // =========================
@@ -330,7 +443,7 @@ namespace PottingLabelPrinter
         /// <summary>
         /// 기본은 종료까지 Open 유지.
         /// 단, 사용자가 Setting에서 포트를 바꾼 경우는 예외적으로 재연결.
-        /// Polling은 종료까지 계속 지(세션만 재연결).
+        /// Polling은 종료까지 계속 (세션만 재연결).
         /// </summary>
         private void TryReconnectBoardKeepPolling()
         {
@@ -345,10 +458,13 @@ namespace PottingLabelPrinter
 
                 if (_polling != null)
                     _polling.ResetLatch();
+
+                // 포트 변경 후 재연결 성공이면 성공 -> 정상
+                SetCommUiState(CommUiState.ReconnectSuccess, _flashSuccessDuration);
             }
             catch
             {
-                // 실패해도 앱은 계속 동작
+                SetCommUiState(CommUiState.ReconnectFail, _flashFailDuration);
             }
         }
 
@@ -363,9 +479,6 @@ namespace PottingLabelPrinter
                     if (f.ShowDialog(this) == DialogResult.OK)
                     {
                         AutoLabelSequenceState.SetCurrentNo(f.SelectedNo);
-
-                        // 선택: 라벨 텍스트에 반영
-                        // lblTotal.Text = $"Total: ... (NextNo={AutoLabelSequenceState.GetCurrentNo()})";
                     }
                 }
             };
@@ -525,7 +638,8 @@ namespace PottingLabelPrinter
 
             if (string.Equals(result, "OK", StringComparison.OrdinalIgnoreCase))
             {
-                AutoLabelSequenceState.SetCurrentNo(currentSeq + 1); _traySeq = currentSeq + 1;
+                AutoLabelSequenceState.SetCurrentNo(currentSeq + 1);
+                _traySeq = currentSeq + 1;
                 txtTrayBarcode.Text = payload;
             }
 
@@ -633,12 +747,17 @@ namespace PottingLabelPrinter
             if (_polling != null)
                 _polling.ResetLatch();
 
-            _traySeqDate = GetProductionDate(DateTime.Now); _traySeq = 1;
+            _traySeqDate = GetProductionDate(DateTime.Now);
+            _traySeq = 1;
+
             AutoLabelSequenceState.SetCurrentNo(1);
             _trayResults.Clear();
             _maxTraySeq = 0;
             txtTrayBarcode.Text = "-";
             ClearAllSelections();
+
+            // 초기화 후 통신 상태도 현재 세션 기준으로 반영
+            SetCommUiState(_modbusSession.IsOpen ? CommUiState.Normal : CommUiState.Bad);
         }
 
         private bool TryGetDailySaveDirectory(DateTime now, out string dailyDir)
@@ -663,7 +782,8 @@ namespace PottingLabelPrinter
                     Directory.CreateDirectory(basePath);
 
                 var productionDate = GetProductionDate(now);
-                var dateFolder = productionDate.ToString("yyyyMMdd"); dailyDir = Path.Combine(basePath, dateFolder);
+                var dateFolder = productionDate.ToString("yyyyMMdd");
+                dailyDir = Path.Combine(basePath, dateFolder);
 
                 if (!Directory.Exists(dailyDir))
                     Directory.CreateDirectory(dailyDir);

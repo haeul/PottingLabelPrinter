@@ -78,6 +78,7 @@
             tlpCommStatus = new TableLayoutPanel();
             lblPortConnectionStatus = new Label();
             lblDoneSignalStatus = new Label();
+            lblCommHealthStatus = new Label();
             pnlHeader.SuspendLayout();
             tlpSetting.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)ImgInfac).BeginInit();
@@ -635,11 +636,13 @@
             // 
             tlpCommStatus.BackColor = SystemColors.Control;
             tlpCommStatus.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
-            tlpCommStatus.ColumnCount = 2;
-            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tlpCommStatus.ColumnCount = 3;
+            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33333F));
+            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33333F));
+            tlpCommStatus.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33333F));
             tlpCommStatus.Controls.Add(lblPortConnectionStatus, 0, 0);
             tlpCommStatus.Controls.Add(lblDoneSignalStatus, 1, 0);
+            tlpCommStatus.Controls.Add(lblCommHealthStatus, 2, 0);
             tlpCommStatus.Location = new Point(10, 909);
             tlpCommStatus.Name = "tlpCommStatus";
             tlpCommStatus.RowCount = 1;
@@ -655,7 +658,7 @@
             lblPortConnectionStatus.Location = new Point(1, 1);
             lblPortConnectionStatus.Margin = new Padding(0);
             lblPortConnectionStatus.Name = "lblPortConnectionStatus";
-            lblPortConnectionStatus.Size = new Size(474, 34);
+            lblPortConnectionStatus.Size = new Size(316, 34);
             lblPortConnectionStatus.TabIndex = 0;
             lblPortConnectionStatus.Text = "미설정 포트 연결";
             lblPortConnectionStatus.TextAlign = ContentAlignment.MiddleCenter;
@@ -665,13 +668,26 @@
             lblDoneSignalStatus.Dock = DockStyle.Fill;
             lblDoneSignalStatus.Font = new Font("Segoe UI Semibold", 12.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
             lblDoneSignalStatus.ForeColor = Color.Gray;
-            lblDoneSignalStatus.Location = new Point(476, 1);
+            lblDoneSignalStatus.Location = new Point(318, 1);
             lblDoneSignalStatus.Margin = new Padding(0);
             lblDoneSignalStatus.Name = "lblDoneSignalStatus";
-            lblDoneSignalStatus.Size = new Size(475, 34);
+            lblDoneSignalStatus.Size = new Size(316, 34);
             lblDoneSignalStatus.TabIndex = 1;
             lblDoneSignalStatus.Text = "토출 완료 신호 수신";
             lblDoneSignalStatus.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblCommHealthStatus
+            // 
+            lblCommHealthStatus.Dock = DockStyle.Fill;
+            lblCommHealthStatus.Font = new Font("Segoe UI Semibold", 12.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            lblCommHealthStatus.ForeColor = Color.Gray;
+            lblCommHealthStatus.Location = new Point(635, 1);
+            lblCommHealthStatus.Margin = new Padding(0);
+            lblCommHealthStatus.Name = "lblCommHealthStatus";
+            lblCommHealthStatus.Size = new Size(316, 34);
+            lblCommHealthStatus.TabIndex = 2;
+            lblCommHealthStatus.Text = "통신 상태";
+            lblCommHealthStatus.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // FormMain
             // 
@@ -743,9 +759,10 @@
         private DataGridViewTextBoxColumn colResult;
         private Button btnPrintSetting;
 
-        // ✅ 상태바 구성
+        // 상태바 구성
         private TableLayoutPanel tlpCommStatus;
         private Label lblPortConnectionStatus;
         private Label lblDoneSignalStatus;
+        private Label lblCommHealthStatus;
     }
 }

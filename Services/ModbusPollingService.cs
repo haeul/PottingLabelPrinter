@@ -128,6 +128,13 @@ namespace PottingLabelPrinter.Services
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                LastCommStatus = "EXCEPTION";
+                LastCommError = ex.Message;
+                LastCommAt = DateTime.Now;
+                PollingErrorDetected?.Invoke(this, new ModbusCommErrorEventArgs(LastCommError));
+            }
             finally
             {
                 _ticking = false;
