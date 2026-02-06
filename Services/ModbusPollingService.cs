@@ -21,6 +21,8 @@ namespace PottingLabelPrinter.Services
         private bool _ticking;
 
         public event EventHandler<PottingDoneDetectedEventArgs>? PottingDoneDetected;
+        public event EventHandler? PollingTxSucceeded;
+        public event EventHandler<ModbusCommErrorEventArgs>? PollingErrorDetected;
 
         // (선택) 디버그/테스트용 상태 노출
         public byte LastInputsByte { get; private set; }
@@ -67,10 +69,12 @@ namespace PottingLabelPrinter.Services
                 if (!_session.IsOpen)
                 {
                     LastCommStatus = "PORT CLOSE";
+                    LastCommError = "PORT CLOSE";
                     LastCommAt = DateTime.Now;
+                    PollingErrorDetected?.Invoke(this, new ModbusCommErrorEventArgs("PORT CLOSE"));
                     return;
                 }
-                    
+
                 // 현재 요구사항은 FC=0x02 고정
                 if (_spec.Function != FunctionCode.ReadDiscreteInputs)
                     return;
@@ -85,12 +89,14 @@ namespace PottingLabelPrinter.Services
                         LastCommStatus = $"FAIL (SID={slave})";
                         LastCommError = err ?? "";
                         LastCommAt = DateTime.Now;
+                        PollingErrorDetected?.Invoke(this, new ModbusCommErrorEventArgs(LastCommError));
                         continue;
                     }
 
                     LastCommStatus = $"OK (SID={slave})";
                     LastCommError = "";
                     LastCommAt = DateTime.Now;
+                    PollingTxSucceeded?.Invoke(this, EventArgs.Empty);
 
 
                     if (bytes.Length < 1)
@@ -145,6 +151,16 @@ namespace PottingLabelPrinter.Services
         {
             Slave = slave;
             DetectedAt = detectedAt;
+        }
+    }
+
+    public sealed class ModbusCommErrorEventArgs : EventArgs
+    {
+        public string ErrorMessage { get; }
+
+        public ModbusCommErrorEventArgs(string errorMessage)
+        {
+            ErrorMessage = errorMessage;
         }
     }
 }
